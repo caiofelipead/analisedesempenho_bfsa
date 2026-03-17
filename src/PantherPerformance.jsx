@@ -24,7 +24,7 @@ function parseCSV(text) {
   const clean = text.replace(/^\uFEFF/, "");
   const lines = clean.split("\n").filter(l => l.trim());
   if (lines.length < 2) return [];
-  // Auto-detect delimiter: semicolon (pt-BR), comma, or tab
+  // Auto-detect delimiter
   const firstLine = lines[0];
   const sep = firstLine.includes("\t") ? "\t" : firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
   const splitLine = (line) => {
@@ -39,9 +39,16 @@ function parseCSV(text) {
     vals.push(cur.trim().replace(/\r/g, ""));
     return vals;
   };
-  const headers = splitLine(firstLine).map(h => h.replace(/^"|"$/g, ""));
-  console.log("[BFSA parseCSV]", { sep: sep === "\t" ? "TAB" : sep, headers, lineCount: lines.length });
-  return lines.slice(1).map(line => {
+  // Find the real header row — skip title/metadata rows where most values are empty
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(lines.length, 10); i++) {
+    const vals = splitLine(lines[i]).map(v => v.replace(/^"|"$/g, ""));
+    const nonEmpty = vals.filter(v => v.length > 0).length;
+    if (nonEmpty >= 3) { headerIdx = i; break; }
+  }
+  const headers = splitLine(lines[headerIdx]).map(h => h.replace(/^"|"$/g, ""));
+  console.log("[BFSA parseCSV]", { sep, headerIdx, headers, lineCount: lines.length });
+  return lines.slice(headerIdx + 1).map(line => {
     const vals = splitLine(line);
     const obj = {};
     headers.forEach((h, i) => { obj[h] = vals[i] || ""; });
