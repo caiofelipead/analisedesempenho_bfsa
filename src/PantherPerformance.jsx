@@ -669,7 +669,7 @@ const norm = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowe
 function AtletaDetailPage({id,onBack,videos=[],partidas=[]}) {
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
   const aN = norm(a.nome);
-  const aVideos=videos.filter(v=>{ const vN=norm(v.atleta); return vN===aN || vN.includes(aN) || aN.includes(vN); });
+  const aVideos=videos.filter(v=>{ if(v.tipo!=="clip_individual") return false; const vN=norm(v.atleta); return vN===aN || vN.includes(aN) || aN.includes(vN); });
   const posStats = {
     GK: ["Defesas","Gols Sofridos","Clean Sheets","xG Sofrido","Saídas"],
     CB: ["Duelos Aéreos","Interceptações","Cortes","Passes Longos","Duelos%"],
