@@ -11,7 +11,7 @@ import {
   ArrowLeft, Play, FileText, UserCheck, Award, Crosshair, Flag,
   BookOpen, Send, Settings, ChevronDown, ChevronUp, Layers,
   Dumbbell, Circle, MapPin, Lock, Clipboard, Package, User,
-  CheckSquare, XCircle, Timer, RefreshCw, Sun, Moon,
+  CheckSquare, XCircle, Timer, RefreshCw, Sun, Moon, Trash2, Edit3,
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════
@@ -488,20 +488,15 @@ function ModeloJogoPage() {
 // PAGE: ADVERSÁRIO
 // ═══════════════════════════════════════════════
 function AdversarioPage() {
-  const [checklist,setChecklist]=useState([
-    {label:"Jogos do adversário baixados (Wyscout/InStat)",done:false},
-    {label:"Formação principal e variações identificadas",done:false},
-    {label:"Jogadores-chave + características mapeados",done:false},
-    {label:"Pontos fortes analisados",done:false},
-    {label:"Vulnerabilidades exploráveis identificadas",done:false},
-    {label:"Transições (ofensiva + defensiva) analisadas",done:false},
-    {label:"Bolas paradas do adversário (ofensivas + defensivas)",done:false},
-    {label:"Clips editados e organizados por tema",done:false},
-    {label:"Apresentação montada (PPT/PDF)",done:false},
-    {label:"Revisão Head Scout",done:false},
-    {label:"Entrega ao corpo técnico (D-2)",done:false},
-  ]);
+  const [checklist,setChecklist]=useState([]);
+  const [editingIdx,setEditingIdx]=useState(null);
+  const [editVal,setEditVal]=useState("");
+  const [newItem,setNewItem]=useState("");
   const toggleCheck=(i)=>setChecklist(prev=>prev.map((item,idx)=>idx===i?{...item,done:!item.done}:item));
+  const removeItem=(i)=>setChecklist(prev=>prev.filter((_,idx)=>idx!==i));
+  const addItem=()=>{if(newItem.trim()){setChecklist(prev=>[...prev,{label:newItem.trim(),done:false}]);setNewItem("");}};
+  const startEdit=(i)=>{setEditingIdx(i);setEditVal(checklist[i].label);};
+  const saveEdit=(i)=>{if(editVal.trim()){setChecklist(prev=>prev.map((item,idx)=>idx===i?{...item,label:editVal.trim()}:item));}setEditingIdx(null);};
   const doneCount=checklist.filter(c=>c.done).length;
   return <div>
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.redDim} 0%,transparent 50%)`}}>
@@ -523,12 +518,27 @@ function AdversarioPage() {
       <div style={{marginBottom:10}}>
         <ProgressBar pct={Math.round((doneCount/checklist.length)*100)} color={doneCount===checklist.length?C.green:C.yellow}/>
       </div>
+      {checklist.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:"12px 0",textAlign:"center"}}>Nenhum item no checklist. Adicione abaixo.</div>}
       {checklist.map((item,i)=>(
-        <div key={i} onClick={()=>toggleCheck(i)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<checklist.length-1?`1px solid ${C.border}08`:"none",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-          {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
-          <span style={{fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none"}}>{item.label}</span>
+        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<checklist.length-1?`1px solid ${C.border}08`:"none"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+          <div style={{cursor:"pointer",display:"flex"}} onClick={()=>toggleCheck(i)}>
+            {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
+          </div>
+          {editingIdx===i?(
+            <input value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>saveEdit(i)} onKeyDown={e=>{if(e.key==="Enter")saveEdit(i);if(e.key==="Escape")setEditingIdx(null);}} autoFocus style={{flex:1,fontFamily:font,fontSize:12,color:C.text,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:4,padding:"2px 6px",outline:"none"}}/>
+          ):(
+            <span style={{flex:1,fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none",cursor:"pointer"}} onClick={()=>toggleCheck(i)}>{item.label}</span>
+          )}
+          <Edit3 size={12} color={C.textDim} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>startEdit(i)}/>
+          <Trash2 size={12} color={C.red} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>removeItem(i)}/>
         </div>
       ))}
+      <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
+        <input value={newItem} onChange={e=>setNewItem(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addItem();}} placeholder="Novo item..." style={{flex:1,fontFamily:font,fontSize:12,color:C.text,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:4,padding:"5px 8px",outline:"none"}}/>
+        <div onClick={addItem} style={{cursor:"pointer",background:C.green,borderRadius:4,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}}>
+          <Plus size={12} color="#fff"/><span style={{fontFamily:font,fontSize:11,color:"#fff",fontWeight:600}}>Adicionar</span>
+        </div>
+      </div>
     </Card>
     <Card>
       <SH title="Análises Anteriores — Paulistão"/>
