@@ -81,9 +81,25 @@ function mapCalendario(rows) {
   }));
 }
 
+function mapVideos(rows) {
+  return rows.filter(r => r["Título"] || r.Titulo).map((r, i) => ({
+    id: i + 1,
+    titulo: r["Título"] || r.Titulo || "",
+    tipo: r.Tipo || "clip_individual",
+    plat: r.Plataforma || r.Plat || "google_drive",
+    atleta: r.Atleta || "",
+    partida: r.Partida || "",
+    dur: r["Duração"] || r.Dur || "",
+    data: r.Data || "",
+    link: r.Link || r.URL || "",
+    linkAlt: r["Link Alt"] || r["Link Alternativo"] || "",
+  }));
+}
+
 function useSheets() {
   const [livePartidas, setLivePartidas] = useState(null);
   const [liveCalendario, setLiveCalendario] = useState(null);
+  const [liveVideos, setLiveVideos] = useState(null);
   const [loading, setLoading] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [error, setError] = useState(null);
@@ -91,37 +107,41 @@ function useSheets() {
   const sync = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [colRows, calRows] = await Promise.all([
-        fetchSheet(GID.coletivo), fetchSheet(GID.calendario),
+      const [colRows, calRows, vidRows] = await Promise.all([
+        fetchSheet(GID.coletivo), fetchSheet(GID.calendario), fetchSheet(GID.videos),
       ]);
       const p = mapColetivo(colRows);
       const c = mapCalendario(calRows);
+      const v = mapVideos(vidRows);
       if (p.length > 0) setLivePartidas(p);
       if (c.length > 0) setLiveCalendario(c);
+      if (v.length > 0) setLiveVideos(v);
       setLastSync(new Date().toLocaleTimeString("pt-BR"));
     } catch (e) { setError(e.message); }
     finally { setLoading(false); }
   }, []);
 
-  return { livePartidas, liveCalendario, loading, lastSync, error, sync };
+  return { livePartidas, liveCalendario, liveVideos, loading, lastSync, error, sync };
 }
 
 // ═══════════════════════════════════════════════
 // DESIGN SYSTEM
 // ═══════════════════════════════════════════════
+// Botafogo SP identity: preto + vermelho + branco
 const C = {
-  bg: "#090b0f", bgCard: "#11141b", bgCardHover: "#171b24",
-  bgInput: "#0d0f16", bgSidebar: "#0c0e14",
-  border: "#1c2030", borderActive: "#c9a227",
-  gold: "#c9a227", goldLight: "#e8c94a", goldDim: "rgba(201,162,39,0.12)",
-  goldGlow: "rgba(201,162,39,0.25)",
-  text: "#e8e6e1", textDim: "#5a6070", textMid: "#8a92a4",
+  bg: "#0a0a0e", bgCard: "rgba(18,18,24,0.65)", bgCardHover: "rgba(26,26,34,0.75)",
+  bgInput: "rgba(12,12,18,0.8)", bgSidebar: "rgba(10,10,14,0.92)",
+  border: "rgba(255,255,255,0.07)", borderActive: "#d4232b",
+  gold: "#d4232b", goldLight: "#ff3b3b", goldDim: "rgba(212,35,43,0.12)",
+  goldGlow: "rgba(212,35,43,0.25)",
+  text: "#f0eee9", textDim: "#5a6070", textMid: "#8a92a4",
   green: "#22c55e", greenDim: "rgba(34,197,94,0.12)",
   red: "#ef4444", redDim: "rgba(239,68,68,0.12)",
   yellow: "#f59e0b", yellowDim: "rgba(245,158,11,0.12)",
   blue: "#3b82f6", blueDim: "rgba(59,130,246,0.12)",
   purple: "#8b5cf6", purpleDim: "rgba(139,92,246,0.12)",
   cyan: "#06b6d4", cyanDim: "rgba(6,182,212,0.12)",
+  glass: "backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);",
 };
 const font = "'JetBrains Mono','SF Mono','Fira Code',monospace";
 const fontD = "'Oswald','Bebas Neue',sans-serif";
@@ -194,35 +214,7 @@ const ANALISTAS = [
   { id:2,nome:"Cassio",cargo:"Analista",foco:"Individual / Pós-jogo",concluidas:35,total:40,atrasadas:0,qualidade:8.1,tempoMedio:130 },
 ];
 
-const TAREFAS = [
-  { id:1,titulo:"Análise tática vs Fortaleza (Série B R1)",analista:"Semir",prazo:"19/03",prio:"urgente",tipo:"analise_adversario",status:"em_andamento",atraso:0 },
-  { id:2,titulo:"Compilação vídeo Hygor Cléber (Jan-Fev)",analista:"Cassio",prazo:"20/03",prio:"media",tipo:"compilacao_video",status:"pendente",atraso:0 },
-  { id:3,titulo:"Relatório físico pré-Série B",analista:"Semir",prazo:"16/03",prio:"alta",tipo:"dados_fisicos",status:"atrasada",atraso:1 },
-  { id:4,titulo:"Feedback individual - Rafael Gava",analista:"Cassio",prazo:"18/03",prio:"media",tipo:"desenvolvimento",status:"em_andamento",atraso:0 },
-  { id:5,titulo:"Preleção vs Fortaleza",analista:"Semir",prazo:"20/03",prio:"urgente",tipo:"prelecao",status:"pendente",atraso:0 },
-  { id:6,titulo:"Bolas paradas defensivas Fortaleza",analista:"Cassio",prazo:"19/03",prio:"alta",tipo:"bola_parada",status:"pendente",atraso:0 },
-  { id:7,titulo:"Consolidação Paulistão — relatório final",analista:"Cassio",prazo:"17/03",prio:"alta",tipo:"pos_jogo",status:"em_andamento",atraso:0 },
-  { id:8,titulo:"Entrega semanal Soutto — Transição Série B",analista:"Caio",prazo:"17/03",prio:"alta",tipo:"entrega_soutto",status:"pendente",atraso:0 },
-];
 
-const VIDEOS = [
-  { id:1,titulo:"Hygor Cléber — Gols Paulistão 2026",tipo:"clip_individual",plat:"wyscout",atleta:"Hygor Cléber",dur:"5:20",data:"17/02" },
-  { id:2,titulo:"BFSA 0x1 Capivariano — Completo",tipo:"jogo_completo",plat:"google_drive",partida:"Capivariano",dur:"96:00",data:"16/02" },
-  { id:3,titulo:"Pressing alto vs Palmeiras — Análise",tipo:"analise_tatica",plat:"wyscout",partida:"Palmeiras",dur:"12:45",data:"04/02" },
-  { id:4,titulo:"Treino Tático 12/03 — Saída de bola",tipo:"treino",plat:"google_drive",dur:"18:30",data:"12/03" },
-  { id:5,titulo:"Rafael Gava — Criação entre linhas",tipo:"clip_individual",plat:"instat",atleta:"Rafael Gava",dur:"7:15",data:"18/02" },
-  { id:6,titulo:"Bola parada defensiva — Compilação Paulistão",tipo:"bola_parada",plat:"google_drive",dur:"9:40",data:"20/02" },
-  { id:7,titulo:"Guarani 0x2 BFSA — Completo",tipo:"jogo_completo",plat:"google_drive",partida:"Guarani",dur:"105:00",data:"07/02" },
-  { id:8,titulo:"Carlão — Duelos + Interceptações",tipo:"clip_individual",plat:"wyscout",atleta:"Carlão",dur:"6:30",data:"18/02" },
-  { id:9,titulo:"Preleção vs Capivariano",tipo:"prelecao",plat:"google_drive",partida:"Capivariano",dur:"6:10",data:"15/02" },
-  { id:10,titulo:"Escanteio ofensivo — Variações",tipo:"bola_parada",plat:"google_drive",dur:"4:55",data:"10/03" },
-  { id:11,titulo:"Modelo de Jogo — Pressing triggers v2.1",tipo:"modelo_jogo",plat:"google_drive",dur:"15:20",data:"01/03" },
-  { id:12,titulo:"BFSA 1x0 Palmeiras — Completo",tipo:"jogo_completo",plat:"google_drive",partida:"Palmeiras",dur:"106:00",data:"02/02" },
-  { id:13,titulo:"Kelvin Giacobe — Dribles + Finalização",tipo:"clip_individual",plat:"wyscout",atleta:"Kelvin Giacobe",dur:"4:50",data:"10/02" },
-  { id:14,titulo:"Leandro Maciel — Recuperações + Distribuição",tipo:"clip_individual",plat:"instat",atleta:"Leandro Maciel",dur:"5:10",data:"12/02" },
-  { id:15,titulo:"BFSA 0x5 Bragantino — Análise erros",tipo:"analise_tatica",plat:"wyscout",partida:"RB Bragantino",dur:"14:20",data:"20/01" },
-  { id:16,titulo:"Fortaleza EC — 3 jogos recentes (scout)",tipo:"analise_tatica",plat:"wyscout",partida:"Fortaleza",dur:"45:00",data:"15/03" },
-];
 
 const TREINOS = [
   { id:1,data:"16/03",tipo:"tatico",intens:"alta",dur:90,obj:"Transição defensiva + compactação",destaque:"Leandro Maciel, Éricson",obs:"Foco pré-Série B" },
@@ -260,15 +252,6 @@ const BOLAS_PARADAS = {
   ],
 };
 
-const ENTREGAS_SOUTTO = [
-  { id:1,data:"17/03",tipo:"Resumo especial",status:"pendente",desc:"Consolidação Paulistão + transição Série B" },
-  { id:2,data:"10/03",tipo:"Resumo semanal",status:"entregue",desc:"Pós-Paulistão: balanço final + indicadores coletivos" },
-  { id:3,data:"03/03",tipo:"Resumo semanal",status:"entregue",desc:"Rodadas 7-8 + avaliação final fase de grupos" },
-  { id:4,data:"24/02",tipo:"Resumo semanal",status:"entregue",desc:"Rodadas 5-6 + destaques individuais" },
-  { id:5,data:"17/02",tipo:"Relatório especial",status:"entregue",desc:"Análise goleada Bragantino + plano de correção" },
-  { id:6,data:"10/02",tipo:"Resumo semanal",status:"entregue",desc:"Rodadas 3-4 + evolução tática + alertas" },
-  { id:7,data:"03/02",tipo:"Resumo semanal",status:"entregue",desc:"Rodadas 1-2 + avaliação inicial do elenco" },
-];
 
 const PROTOCOLOS = [
   { cat: "Nomenclatura", regra: "[DATA]_[TIPO]_[DETALHE] — Ex: 2026-03-21_adv_fortaleza.pptx" },
@@ -330,7 +313,7 @@ const PlatBadge = ({p}) => {
   return <Badge color={m[p]||C.textDim}>{p.replace("_"," ")}</Badge>;
 };
 const StatCard = ({label,value,sub,icon:I,accent=C.gold}) => (
-  <div style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:6,padding:"14px 18px",display:"flex",alignItems:"center",gap:14}}>
+  <div style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
     <div style={{width:40,height:40,borderRadius:6,background:`${accent}15`,display:"flex",alignItems:"center",justifyContent:"center"}}><I size={18} color={accent}/></div>
     <div>
       <div style={{fontSize:22,fontWeight:700,fontFamily:fontD,color:C.text,letterSpacing:"0.02em"}}>{value}</div>
@@ -365,7 +348,7 @@ const ProgressBar = ({pct,color=C.green}) => (
   </div>
 );
 const Card = ({children,onClick,style:s}) => (
-  <div onClick={onClick} style={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:6,padding:16,cursor:onClick?"pointer":"default",transition:"all 0.15s",...s}} onMouseEnter={e=>{if(onClick){e.currentTarget.style.borderColor=C.gold;e.currentTarget.style.transform="translateY(-1px)"}}} onMouseLeave={e=>{if(onClick){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="translateY(0)"}}}>
+  <div onClick={onClick} style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:8,padding:16,cursor:onClick?"pointer":"default",transition:"all 0.2s ease",boxShadow:"0 4px 24px rgba(0,0,0,0.25)",...s}} onMouseEnter={e=>{if(onClick){e.currentTarget.style.borderColor=C.gold;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px ${C.gold}33`}}} onMouseLeave={e=>{if(onClick){e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.25)"}}}>
     {children}
   </div>
 );
@@ -373,13 +356,13 @@ const Card = ({children,onClick,style:s}) => (
 // ═══════════════════════════════════════════════
 // PAGE: DASHBOARD
 // ═══════════════════════════════════════════════
-function DashboardPage({nav}) {
+function DashboardPage({nav,tarefas=[],videos=[]}) {
   const ativos=ATLETAS.filter(a=>a.status==="ativo").length;
   const vit=PARTIDAS.filter(p=>p.res==="V").length;
   const emp=PARTIDAS.filter(p=>p.res==="E").length;
   const der=PARTIDAS.filter(p=>p.res==="D").length;
-  const atrasadas=TAREFAS.filter(t=>t.atraso>0||t.status==="atrasada");
-  const pendentes=TAREFAS.filter(t=>t.status!=="concluida");
+  const atrasadas=tarefas.filter(t=>t.status==="atrasada");
+  const pendentes=tarefas.filter(t=>t.status!=="concluida");
   const chartData=PARTIDAS.map(p=>({j:`vs ${p.adv}`,r:p.res==="V"?3:p.res==="E"?1:0})).reverse();
   const subindo=ATLETAS.filter(a=>a.status==="ativo"&&a.tend==="subindo");
 
@@ -387,7 +370,7 @@ function DashboardPage({nav}) {
     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:20}}>
       <StatCard label="Atletas Ativos" value={ativos} icon={Users}/>
       <StatCard label="Jogos" value={PARTIDAS.length} sub={`${vit}V ${emp}E ${der}D`} icon={Shield} accent={C.green}/>
-      <StatCard label="Vídeos" value={VIDEOS.length} icon={Video} accent={C.blue}/>
+      <StatCard label="Vídeos" value={videos.length} icon={Video} accent={C.blue}/>
       <StatCard label="Tarefas Pendentes" value={pendentes.length} icon={ClipboardList} accent={C.yellow}/>
       <StatCard label="Atrasadas" value={atrasadas.length} icon={AlertTriangle} accent={atrasadas.length>0?C.red:C.green}/>
     </div>
@@ -502,15 +485,17 @@ function AdversarioPage() {
     <Card style={{marginBottom:16}}>
       <SH title="Checklist — Análise de Adversário"/>
       {[
-        {label:"Assistir 3 jogos recentes (Wyscout/InStat)",done:true},
-        {label:"Formação e sistema de jogo identificados",done:true},
-        {label:"Jogadores-chave mapeados",done:false},
-        {label:"Pontos fracos exploráveis identificados",done:false},
-        {label:"Bolas paradas do adversário analisadas",done:false},
-        {label:"Clips editados (máx. 15, ~10 min total)",done:false},
-        {label:"Apresentação montada",done:false},
-        {label:"Revisão Head Scout",done:false},
-        {label:"Apresentação ao Tencati (D-2)",done:false},
+        {label:"Jogos do adversário baixados (Wyscout/InStat)",done:true},
+        {label:"Formação principal e variações identificadas",done:true},
+        {label:"Jogadores-chave + características mapeados",done:false},
+        {label:"Pontos fortes analisados",done:false},
+        {label:"Vulnerabilidades exploráveis identificadas",done:false},
+        {label:"Transições (ofensiva + defensiva) analisadas",done:false},
+        {label:"Bolas paradas do adversário (ofensivas + defensivas)",done:false},
+        {label:"Clips editados e organizados por tema",done:false},
+        {label:"Apresentação montada (PPT/PDF)",done:false},
+        {label:"Revisão Head Scout (Caio)",done:false},
+        {label:"Entrega ao corpo técnico (D-2)",done:false},
       ].map((item,i)=>(
         <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<8?`1px solid ${C.border}08`:"none"}}>
           {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
@@ -538,8 +523,8 @@ function AdversarioPage() {
 // ═══════════════════════════════════════════════
 // PAGE: PRELEÇÃO
 // ═══════════════════════════════════════════════
-function PrelecaoPage() {
-  const prelecoes=VIDEOS.filter(v=>v.tipo==="prelecao");
+function PrelecaoPage({videos=[]}) {
+  const prelecoes=videos.filter(v=>v.tipo==="prelecao");
   return <div>
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.purpleDim} 0%,transparent 50%)`}}>
       <SH title="Próxima Preleção"/>
@@ -566,7 +551,7 @@ function PrelecaoPage() {
 // ═══════════════════════════════════════════════
 // PAGE: PARTIDAS
 // ═══════════════════════════════════════════════
-function PartidasPage() {
+function PartidasPage({videos=[]}) {
   return <div>
     <SH title="Partidas + Pós-Jogo" count={PARTIDAS.length}/>
     {PARTIDAS.map(p=>(
@@ -579,7 +564,7 @@ function PartidasPage() {
         </div>
         <div style={{display:"flex",gap:6}}>
           <Badge color={p.posJogoDone?C.green:C.yellow}>{p.posJogoDone?"PÓS ✓":"PENDENTE"}</Badge>
-          <Badge color={C.blue}><Video size={9}/> {VIDEOS.filter(v=>v.partida===p.adv).length}</Badge>
+          <Badge color={C.blue}><Video size={9}/> {videos.filter(v=>v.partida===p.adv).length}</Badge>
         </div>
       </Card>
     ))}
@@ -663,7 +648,7 @@ function AtletasPage({nav}) {
       {filtered.map(a=>(
         <Card key={a.id} onClick={()=>nav("atleta-detail",a.id)}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{width:42,height:42,borderRadius:"50%",background:`${C.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700,border:`2px solid ${C.gold}33`}}>{a.num||"—"}</div>
+            {a.foto?<img src={a.foto} alt={a.nome} style={{width:42,height:42,borderRadius:"50%",objectFit:"cover",border:`2px solid ${C.gold}33`}}/>:<div style={{width:42,height:42,borderRadius:"50%",background:`${C.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700,border:`2px solid ${C.gold}33`}}>{a.num||"—"}</div>}
             <div style={{flex:1}}>
               <div style={{fontFamily:font,fontSize:13,color:C.text,fontWeight:700}}>{a.nome}</div>
               <div style={{display:"flex",gap:4,alignItems:"center",marginTop:2}}><StatusDot s={a.status}/><span style={{fontFamily:font,fontSize:9,color:C.textDim,textTransform:"uppercase"}}>{a.status}</span></div>
@@ -682,14 +667,26 @@ function AtletasPage({nav}) {
 // ═══════════════════════════════════════════════
 // PAGE: ATLETA DETAIL
 // ═══════════════════════════════════════════════
-function AtletaDetailPage({id,onBack}) {
+function AtletaDetailPage({id,onBack,videos=[]}) {
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
-  const aVideos=VIDEOS.filter(v=>v.atleta===a.nome);
+  const aVideos=videos.filter(v=>v.atleta===a.nome);
+  const posStats = {
+    GK: ["Defesas","Gols Sofridos","Clean Sheets","xG Sofrido","Saídas"],
+    CB: ["Duelos Aéreos","Interceptações","Cortes","Passes Longos","Duelos%"],
+    RB: ["Cruzamentos","Dribles","Interceptações","Passes Crt","Duelos%"],
+    LB: ["Cruzamentos","Dribles","Interceptações","Passes Crt","Duelos%"],
+    CDM: ["Recuperações","Passes","Interceptações","Duelos%","PPDA contrib"],
+    CAM: ["Passes Decisivos","Finalizações","Dribles","Chances Criadas","xG"],
+    RW: ["Dribles","Finalizações","Cruzamentos","Gols","Assistências"],
+    LW: ["Dribles","Finalizações","Cruzamentos","Gols","Assistências"],
+    ST: ["Gols","xG","Finalizações","Rem no Alvo%","Toques na Área"],
+  };
+  const statsForPos = posStats[a.pos] || ["Jogos","Minutos","Notas"];
   return <div>
     <button onClick={onBack} style={{background:"none",border:"none",color:C.textDim,cursor:"pointer",fontFamily:font,fontSize:11,display:"flex",alignItems:"center",gap:4,marginBottom:14,padding:0}}><ArrowLeft size={13}/>VOLTAR</button>
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.goldDim} 0%,transparent 50%)`}}>
       <div style={{display:"flex",alignItems:"center",gap:20}}>
-        <div style={{width:70,height:70,borderRadius:"50%",background:`${C.gold}33`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:32,color:C.gold,fontWeight:700,border:`3px solid ${C.gold}55`}}>{a.num||"—"}</div>
+        {a.foto?<img src={a.foto} alt={a.nome} style={{width:70,height:70,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.gold}55`}}/>:<div style={{width:70,height:70,borderRadius:"50%",background:`${C.gold}33`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:32,color:C.gold,fontWeight:700,border:`3px solid ${C.gold}55`}}>{a.num||"—"}</div>}
         <div style={{flex:1}}>
           <div style={{fontFamily:fontD,fontSize:26,color:C.text,fontWeight:700,textTransform:"uppercase"}}>{a.nome}</div>
           <div style={{display:"flex",gap:8,marginTop:6}}>
@@ -699,6 +696,17 @@ function AtletaDetailPage({id,onBack}) {
           </div>
         </div>
       </div>
+    </Card>
+    <Card style={{marginBottom:14}}><SH title={`Stats por Posição — ${a.pos}`}/>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(statsForPos.length,5)},1fr)`,gap:8}}>
+        {statsForPos.map((s,i)=>(
+          <div key={i} style={{textAlign:"center",padding:"10px 6px",borderRadius:4,background:C.bgInput,border:`1px solid ${C.border}`}}>
+            <div style={{fontFamily:fontD,fontSize:16,color:C.gold}}>—</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{s}</div>
+          </div>
+        ))}
+      </div>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginTop:6,fontStyle:"italic"}}>Dados individuais alimentados via planilha (aba Individual).</div>
     </Card>
 
     <Card style={{marginBottom:14}}><SH title="Partidas Coletivas — Paulistão 2026" count={PARTIDAS.length}/>
@@ -735,26 +743,30 @@ function AtletaDetailPage({id,onBack}) {
 // ═══════════════════════════════════════════════
 // PAGE: VÍDEOS
 // ═══════════════════════════════════════════════
-function VideosPage() {
+function VideosPage({videos=[]}) {
   const [search,setSearch]=useState("");
   const [ft,setFt]=useState("TODOS");
-  const tipos=["TODOS","jogo_completo","clip_individual","analise_tatica","treino","prelecao","bola_parada","modelo_jogo"];
-  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_tatica:"Tática",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",modelo_jogo:"Modelo Jogo"};
-  const filtered=VIDEOS.filter(v=>(v.titulo.toLowerCase().includes(search.toLowerCase()))&&(ft==="TODOS"||v.tipo===ft));
+  const tipos=["TODOS","jogo_completo","clip_individual","analise_adversario","treino","prelecao","bola_parada","modelo_jogo"];
+  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",modelo_jogo:"Modelo Jogo"};
+  const filtered=videos.filter(v=>(v.titulo.toLowerCase().includes(search.toLowerCase()))&&(ft==="TODOS"||v.tipo===ft));
   return <div>
     <SearchBar ph="Buscar vídeo..." val={search} onChange={setSearch}/>
     <Tabs items={tipos.map(t=>tipoLabel[t]||t)} active={tipoLabel[ft]||ft} onChange={label=>{const key=Object.entries(tipoLabel).find(([k,v])=>v===label);setFt(key?key[0]:label==="TODOS"?"TODOS":label);}}/>
+    {videos.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center",background:C.bgCard,borderRadius:6,border:`1px solid ${C.border}`}}>Nenhum vídeo carregado. Sincronize com Google Sheets para carregar os vídeos da planilha.</div>}
     <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
-      {filtered.map(v=>(
-        <Card key={v.id}>
+      {filtered.map(v=>{
+        const videoLink = v.link || v.linkAlt || "";
+        return <Card key={v.id} onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined}>
           <div style={{width:"100%",height:80,borderRadius:4,marginBottom:10,background:`linear-gradient(135deg,${C.bgInput},${C.bgCardHover})`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
             <div style={{width:38,height:38,borderRadius:"50%",background:`${C.gold}33`,display:"flex",alignItems:"center",justifyContent:"center"}}><Play size={16} color={C.gold} fill={C.gold}/></div>
-            <span style={{position:"absolute",bottom:4,right:6,fontFamily:font,fontSize:9,color:C.text,background:"rgba(0,0,0,0.7)",padding:"1px 5px",borderRadius:2}}>{v.dur}</span>
+            {v.dur&&<span style={{position:"absolute",bottom:4,right:6,fontFamily:font,fontSize:9,color:C.text,background:"rgba(0,0,0,0.7)",padding:"1px 5px",borderRadius:2}}>{v.dur}</span>}
+            {videoLink&&<span style={{position:"absolute",top:4,right:6,fontFamily:font,fontSize:8,color:C.green,background:"rgba(0,0,0,0.7)",padding:"1px 5px",borderRadius:2}}>LINK</span>}
           </div>
           <div style={{fontFamily:font,fontSize:12,color:C.text,fontWeight:600,marginBottom:4}}>{v.titulo}</div>
+          {v.atleta&&<div style={{fontFamily:font,fontSize:10,color:C.gold,marginBottom:4}}>Atleta: {v.atleta}</div>}
           <div style={{display:"flex",gap:4}}><PlatBadge p={v.plat}/><Badge>{tipoLabel[v.tipo]||v.tipo}</Badge></div>
-        </Card>
-      ))}
+        </Card>;
+      })}
     </div>
   </div>;
 }
@@ -762,8 +774,30 @@ function VideosPage() {
 // ═══════════════════════════════════════════════
 // PAGE: ANALISTAS
 // ═══════════════════════════════════════════════
-function AnalistasPage() {
-  const atrasadas=TAREFAS.filter(t=>t.atraso>0||t.status==="atrasada");
+function AddTarefaForm({onAdd,onCancel}) {
+  const [titulo,setTitulo]=useState("");
+  const [analista,setAnalista]=useState("Semir");
+  const [prazo,setPrazo]=useState("");
+  const [prio,setPrio]=useState("media");
+  const [tipo,setTipo]=useState("analise_adversario");
+  const submit=()=>{if(!titulo.trim())return;onAdd({titulo,analista,prazo,prio,tipo,status:"pendente"})};
+  return <Card style={{marginBottom:12,border:`1px solid ${C.gold}44`}}>
+    <SH title="Nova Tarefa"/>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
+      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Título</div><input value={titulo} onChange={e=>setTitulo(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11,outline:"none"}} placeholder="Descrição da tarefa..."/></div>
+      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Analista</div><select value={analista} onChange={e=>setAnalista(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11}}><option value="Semir">Semir</option><option value="Cassio">Cassio</option><option value="Caio">Caio</option></select></div>
+      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Prazo</div><input value={prazo} onChange={e=>setPrazo(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11,outline:"none"}} placeholder="dd/mm"/></div>
+      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Prioridade</div><select value={prio} onChange={e=>setPrio(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11}}><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div>
+    </div>
+    <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+      <button onClick={onCancel} style={{padding:"5px 12px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:4,color:C.textDim,fontFamily:font,fontSize:10,cursor:"pointer"}}>Cancelar</button>
+      <button onClick={submit} style={{padding:"5px 12px",background:C.gold,border:"none",borderRadius:4,color:C.bg,fontFamily:font,fontSize:10,fontWeight:700,cursor:"pointer"}}>Adicionar</button>
+    </div>
+  </Card>;
+}
+
+function AnalistasPage({tarefas=[],addTarefa,updateTarefa,removeTarefa,showAddTarefa,setShowAddTarefa}) {
+  const atrasadas=tarefas.filter(t=>t.status==="atrasada");
   return <div>
     <div style={{display:"grid",gridTemplateColumns:`repeat(${ANALISTAS.length},1fr)`,gap:14,marginBottom:16}}>
       {ANALISTAS.map(a=>{
@@ -803,48 +837,27 @@ function AnalistasPage() {
         </div>
       ))}
     </Card>}
+    {showAddTarefa&&<AddTarefaForm onAdd={addTarefa} onCancel={()=>setShowAddTarefa(false)}/>}
     <Card style={{marginTop:16}}>
-      <SH title="Todas as Tarefas" count={TAREFAS.length}/>
-      {TAREFAS.map(t=>{
+      <SH title="Todas as Tarefas" count={tarefas.length} action="Nova Tarefa" onAction={()=>setShowAddTarefa(true)}/>
+      {tarefas.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhuma tarefa cadastrada. Clique em "Nova Tarefa" para adicionar.</div>}
+      {tarefas.map(t=>{
         const sc={concluida:C.green,em_andamento:C.yellow,pendente:C.textDim,atrasada:C.red};
         return <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:sc[t.status]||C.textDim}}/>
+          <div style={{width:8,height:8,borderRadius:"50%",background:sc[t.status]||C.textDim,cursor:"pointer"}} onClick={()=>{const next={pendente:"em_andamento",em_andamento:"concluida",concluida:"pendente",atrasada:"em_andamento"};updateTarefa(t.id,{status:next[t.status]||"pendente"})}}/>
           <div style={{flex:1}}>
             <div style={{fontFamily:font,fontSize:11,color:C.text}}>{t.titulo}</div>
             <div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{t.analista} · {t.prazo}</div>
           </div>
-          <Badge color={sc[t.status]}>{t.status.replace("_"," ")}</Badge>
+          <Badge color={sc[t.status]}>{(t.status||"pendente").replace("_"," ")}</Badge>
           <PrioBadge p={t.prio}/>
+          <button onClick={()=>removeTarefa(t.id)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><XCircle size={14} color={C.red}/></button>
         </div>;
       })}
     </Card>
   </div>;
 }
 
-// ═══════════════════════════════════════════════
-// PAGE: ENTREGAS
-// ═══════════════════════════════════════════════
-function EntregasPage() {
-  return <div>
-    <Card style={{marginBottom:16}}>
-      <SH title="Entregas — Fillipe Soutto (Gerente de Futebol)"/>
-      <div style={{fontFamily:font,fontSize:12,color:C.textMid,lineHeight:"1.7",marginBottom:12}}>Resumo executivo semanal + relatórios específicos sob demanda.</div>
-    </Card>
-    <Card>
-      <SH title="Histórico" count={ENTREGAS_SOUTTO.length}/>
-      {ENTREGAS_SOUTTO.map(e=>(
-        <div key={e.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4}}>
-          <div style={{fontFamily:fontD,fontSize:14,color:C.textMid,width:50}}>{e.data}</div>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:font,fontSize:12,color:C.text}}>{e.tipo}</div>
-            <div style={{fontFamily:font,fontSize:10,color:C.textDim}}>{e.desc}</div>
-          </div>
-          <Badge color={e.status==="entregue"?C.green:C.yellow}>{e.status==="entregue"?"ENTREGUE":"PENDENTE"}</Badge>
-        </div>
-      ))}
-    </Card>
-  </div>;
-}
 
 // ═══════════════════════════════════════════════
 // PAGE: PROTOCOLOS
@@ -882,7 +895,6 @@ const NAV = [
   ]},
   { section: "GESTÃO", items: [
     { id:"analistas",label:"Analistas",icon:ClipboardList },
-    { id:"entregas",label:"Entregas (Soutto)",icon:Send },
     { id:"protocolos",label:"Protocolos",icon:Settings },
   ]},
 ];
@@ -893,39 +905,43 @@ export default function PantherPerformance() {
   const [selId,setSelId]=useState(null);
   const [collapsed,setCollapsed]=useState({});
   const [time,setTime]=useState(new Date());
+  const [tarefas,setTarefas]=useState([]);
+  const [showAddTarefa,setShowAddTarefa]=useState(false);
   const sheets = useSheets();
 
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),60000);return()=>clearInterval(t)},[]);
-  // Auto-sync on mount
   useEffect(()=>{sheets.sync()},[]);// eslint-disable-line
 
-  // Use live data if available, fallback to hardcoded
   const partidas = sheets.livePartidas || PARTIDAS;
   const calendario = sheets.liveCalendario || CALENDARIO_SERIE_B;
+  const videos = sheets.liveVideos || [];
+
+  const addTarefa=(t)=>{setTarefas(prev=>[...prev,{...t,id:Date.now()}]);setShowAddTarefa(false)};
+  const updateTarefa=(id,updates)=>setTarefas(prev=>prev.map(t=>t.id===id?{...t,...updates}:t));
+  const removeTarefa=(id)=>setTarefas(prev=>prev.filter(t=>t.id!==id));
 
   const nav=(target,id)=>{
     if(target==="atleta-detail"){setSub("atleta-detail");setSelId(id)}
     else{setPage(target);setSub(null);setSelId(null)}
   };
   const goBack=()=>{setSub(null);setSelId(null);setPage("atletas")};
-  const atrasadas=TAREFAS.filter(t=>t.atraso>0||t.status==="atrasada").length;
+  const atrasadas=tarefas.filter(t=>t.status==="atrasada").length;
 
   const renderPage=()=>{
-    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack}/>;
+    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos}/>;
     switch(page){
-      case "dashboard": return <DashboardPage nav={nav}/>;
+      case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;
       case "adversario": return <AdversarioPage/>;
-      case "prelecao": return <PrelecaoPage/>;
-      case "partidas": return <PartidasPage/>;
+      case "prelecao": return <PrelecaoPage videos={videos}/>;
+      case "partidas": return <PartidasPage videos={videos}/>;
       case "bolas-paradas": return <BolasParadasPage/>;
       case "treinos": return <TreinosPage/>;
       case "atletas": return <AtletasPage nav={nav}/>;
-      case "videos": return <VideosPage/>;
-      case "analistas": return <AnalistasPage/>;
-      case "entregas": return <EntregasPage/>;
+      case "videos": return <VideosPage videos={videos}/>;
+      case "analistas": return <AnalistasPage tarefas={tarefas} addTarefa={addTarefa} updateTarefa={updateTarefa} removeTarefa={removeTarefa} showAddTarefa={showAddTarefa} setShowAddTarefa={setShowAddTarefa}/>;
       case "protocolos": return <ProtocolosPage/>;
-      default: return <DashboardPage nav={nav}/>;
+      default: return <DashboardPage nav={nav} tarefas={tarefas} videos={videos}/>;
     }
   };
 
@@ -943,12 +959,12 @@ export default function PantherPerformance() {
       `}</style>
 
       {/* SIDEBAR */}
-      <div style={{width:210,minHeight:"100vh",background:C.bgSidebar,borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:10,overflowY:"auto"}}>
-        <div style={{padding:"16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:8}}>
-          <div style={{width:32,height:32,borderRadius:6,background:`linear-gradient(135deg,${C.gold},${C.goldLight})`,display:"flex",alignItems:"center",justifyContent:"center"}}><Zap size={16} color={C.bg} strokeWidth={3}/></div>
+      <div style={{width:210,minHeight:"100vh",background:C.bgSidebar,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:10,overflowY:"auto"}}>
+        <div style={{padding:"16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
+          <img src="/3154_imgbank_1685113109.png" alt="Botafogo FC" style={{width:36,height:36,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>
           <div>
-            <div style={{fontFamily:fontD,fontSize:14,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.1em",lineHeight:1}}>PANTHER</div>
-            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",letterSpacing:"0.15em"}}>Performance</div>
+            <div style={{fontFamily:fontD,fontSize:16,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.12em",lineHeight:1}}>BFSA</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",letterSpacing:"0.15em"}}>Análise de Desempenho</div>
           </div>
         </div>
         <div style={{padding:"8px 6px",flex:1}}>
