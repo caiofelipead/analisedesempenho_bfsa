@@ -57,6 +57,7 @@ function mapColetivo(rows) {
     id: i + 1, data: r.Data || "", adv: r["Adversário"], comp: r.Comp, res: r.Res,
     pl: r.Placar || "", mand: r.Local === "C", form: r.Sistema || "",
     rod: parseInt((r.Rodada || "").replace("R", "")) || i + 1,
+    escudo: r.escudo || r.Escudo || "",
     posJogoDone: true, videosDone: true, adversarioDone: true,
     xg: ptNum(r.xG), xgC: ptNum(r.xGA), posse: ptNum(r["Posse%"]),
     passes: ptNum(r.Passes), passCrt: ptNum(r["Pass Crt"]), passPct: ptNum(r["Pass%"]),
@@ -75,6 +76,7 @@ function mapColetivo(rows) {
 function mapCalendario(rows) {
   return rows.filter(r => r.Comp && r["Adversário"]).map(r => ({
     comp: r.Comp, rodada: r.Rodada, data: r.Data, adv: r["Adversário"], local: r.Local,
+    escudo: r.escudo || r.Escudo || "",
     adv_ok: r.ADV === "✓", pre_ok: r.PRE === "✓", pos_ok: r.POS === "✓",
     dat_ok: r.DAT === "✓", wys_ok: r.WYS === "✓", tre_ok: r.TRE === "✓",
     bsp_ok: r.BSP === "✓", ind_ok: r.IND === "✓",
@@ -329,6 +331,9 @@ const ResBadge = ({r}) => {
   const m={V:{c:C.green,bg:C.greenDim},D:{c:C.red,bg:C.redDim},E:{c:C.yellow,bg:C.yellowDim}};
   const x=m[r]||m.E; return <Badge color={x.c} bg={x.bg}>{r}</Badge>;
 };
+const Escudo = ({src,size=20}) => src ? (
+  <img src={src} alt="" style={{width:size,height:size,objectFit:"contain",borderRadius:2,flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>
+) : null;
 const PlatBadge = ({p}) => {
   const m={youtube:"#FF0000",vimeo:"#1AB7EA",google_drive:"#0F9D58",wyscout:"#FF6B00",instat:"#6366f1"};
   return <Badge color={m[p]||C.textDim}>{p.replace("_"," ")}</Badge>;
@@ -377,7 +382,8 @@ const Card = ({children,onClick,style:s}) => (
 // ═══════════════════════════════════════════════
 // PAGE: DASHBOARD
 // ═══════════════════════════════════════════════
-function DashboardPage({nav,tarefas=[],videos=[]}) {
+function DashboardPage({nav,tarefas=[],videos=[],calendario=CALENDARIO_SERIE_B}) {
+  const proxEscudo=(calendario.find(c=>c.adv===PROX_ADV.nome)||{}).escudo||"";
   const ativos=ATLETAS.filter(a=>a.status==="ativo").length;
   const vit=PARTIDAS.filter(p=>p.res==="V").length;
   const emp=PARTIDAS.filter(p=>p.res==="E").length;
@@ -400,7 +406,9 @@ function DashboardPage({nav,tarefas=[],videos=[]}) {
       <Card>
         <SH title="Próximo Adversário"/>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{width:56,height:56,borderRadius:"50%",background:`${C.red}22`,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.red}44`}}><Crosshair size={24} color={C.red}/></div>
+          <div style={{width:56,height:56,borderRadius:"50%",background:`${C.red}22`,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.red}44`,overflow:"hidden"}}>
+            {proxEscudo?<img src={proxEscudo} alt={PROX_ADV.nome} style={{width:38,height:38,objectFit:"contain"}}/>:<Crosshair size={24} color={C.red}/>}
+          </div>
           <div style={{flex:1}}>
             <div style={{fontFamily:fontD,fontSize:22,color:C.text,fontWeight:700}}>{PROX_ADV.nome}</div>
             <div style={{fontFamily:font,fontSize:11,color:C.textDim}}>{PROX_ADV.comp} · {PROX_ADV.data} · {PROX_ADV.form}</div>
@@ -487,7 +495,9 @@ function ModeloJogoPage() {
 // ═══════════════════════════════════════════════
 // PAGE: ADVERSÁRIO
 // ═══════════════════════════════════════════════
-function AdversarioPage() {
+function AdversarioPage({partidas=PARTIDAS,calendario=CALENDARIO_SERIE_B}) {
+  const escudoMap=Object.fromEntries([...partidas,...calendario].filter(x=>x.escudo).map(x=>[x.adv,x.escudo]));
+  const proxEscudo=escudoMap[PROX_ADV.nome]||"";
   const [checklist,setChecklist]=useState([]);
   const [editingIdx,setEditingIdx]=useState(null);
   const [editVal,setEditVal]=useState("");
@@ -502,7 +512,9 @@ function AdversarioPage() {
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.redDim} 0%,transparent 50%)`}}>
       <SH title="Em Andamento — Próximo Jogo"/>
       <div style={{display:"flex",alignItems:"center",gap:20}}>
-        <div style={{width:64,height:64,borderRadius:"50%",background:`${C.red}22`,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.red}44`}}><Crosshair size={28} color={C.red}/></div>
+        <div style={{width:64,height:64,borderRadius:"50%",background:`${C.red}22`,display:"flex",alignItems:"center",justifyContent:"center",border:`2px solid ${C.red}44`,overflow:"hidden"}}>
+          {proxEscudo?<img src={proxEscudo} alt={PROX_ADV.nome} style={{width:44,height:44,objectFit:"contain"}}/>:<Crosshair size={28} color={C.red}/>}
+        </div>
         <div style={{flex:1}}>
           <div style={{fontFamily:fontD,fontSize:26,color:C.text,fontWeight:700}}>{PROX_ADV.nome}</div>
           <div style={{fontFamily:font,fontSize:12,color:C.textDim}}>{PROX_ADV.comp} · {PROX_ADV.data} · Formação esperada: {PROX_ADV.form}</div>
@@ -542,10 +554,11 @@ function AdversarioPage() {
     </Card>
     <Card>
       <SH title="Análises Anteriores — Paulistão"/>
-      {PARTIDAS.filter(p=>p.adversarioDone).map(p=>(
+      {partidas.filter(p=>p.adversarioDone).map(p=>(
         <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:4,marginBottom:4,border:`1px solid ${C.border}`}}>
           <ResBadge r={p.res}/>
           <span style={{fontFamily:fontD,fontSize:16,color:C.text,fontWeight:700,width:50,textAlign:"center"}}>{p.pl}</span>
+          <Escudo src={p.escudo||escudoMap[p.adv]} size={22}/>
           <div style={{flex:1}}>
             <span style={{fontFamily:font,fontSize:12,color:C.text}}>vs {p.adv}</span>
             <span style={{fontFamily:font,fontSize:10,color:C.textDim,marginLeft:8}}>R{p.rod} · {p.data}</span>
@@ -595,6 +608,7 @@ function PartidasPage({videos=[]}) {
       <Card key={p.id} style={{marginBottom:8,display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:50,textAlign:"center"}}><ResBadge r={p.res}/></div>
         <div style={{fontFamily:fontD,fontSize:22,color:C.text,fontWeight:700,width:55,textAlign:"center"}}>{p.pl}</div>
+        <Escudo src={p.escudo} size={24}/>
         <div style={{flex:1}}>
           <div style={{fontFamily:font,fontSize:13,color:C.text,fontWeight:600}}>{p.mand?"Botafogo-SP":p.adv} vs {p.mand?p.adv:"Botafogo-SP"}</div>
           <div style={{fontFamily:font,fontSize:10,color:C.textDim}}>R{p.rod} · {p.data} · {p.form} · xG {p.xg.toFixed(2)} / xGA {p.xgC.toFixed(2)}</div>
@@ -752,7 +766,7 @@ function AtletaDetailPage({id,onBack,videos=[]}) {
         <tbody>{PARTIDAS.map((p,i)=>(
           <tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             <td style={{padding:"8px 10px",color:C.textDim}}>{p.rod}</td>
-            <td style={{padding:"8px 10px",color:C.text}}>{p.adv}</td>
+            <td style={{padding:"8px 10px",color:C.text}}><div style={{display:"flex",alignItems:"center",gap:6}}><Escudo src={p.escudo} size={16}/>{p.adv}</div></td>
             <td style={{padding:"8px 10px"}}><ResBadge r={p.res}/></td>
             <td style={{padding:"8px 10px",color:C.text,fontFamily:fontD,fontSize:14}}>{p.pl}</td>
             <td style={{padding:"8px 10px",color:C.green}}>{p.xg.toFixed(2)}</td>
@@ -971,9 +985,9 @@ export default function PantherPerformance() {
   const renderPage=()=>{
     if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos}/>;
     switch(page){
-      case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos}/>;
+      case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} calendario={calendario}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;
-      case "adversario": return <AdversarioPage/>;
+      case "adversario": return <AdversarioPage partidas={partidas} calendario={calendario}/>;
       case "prelecao": return <PrelecaoPage videos={videos}/>;
       case "partidas": return <PartidasPage videos={videos}/>;
       case "bolas-paradas": return <BolasParadasPage/>;
