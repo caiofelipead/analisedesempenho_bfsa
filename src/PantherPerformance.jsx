@@ -488,6 +488,21 @@ function ModeloJogoPage() {
 // PAGE: ADVERSÁRIO
 // ═══════════════════════════════════════════════
 function AdversarioPage() {
+  const [checklist,setChecklist]=useState([
+    {label:"Jogos do adversário baixados (Wyscout/InStat)",done:false},
+    {label:"Formação principal e variações identificadas",done:false},
+    {label:"Jogadores-chave + características mapeados",done:false},
+    {label:"Pontos fortes analisados",done:false},
+    {label:"Vulnerabilidades exploráveis identificadas",done:false},
+    {label:"Transições (ofensiva + defensiva) analisadas",done:false},
+    {label:"Bolas paradas do adversário (ofensivas + defensivas)",done:false},
+    {label:"Clips editados e organizados por tema",done:false},
+    {label:"Apresentação montada (PPT/PDF)",done:false},
+    {label:"Revisão Head Scout",done:false},
+    {label:"Entrega ao corpo técnico (D-2)",done:false},
+  ]);
+  const toggleCheck=(i)=>setChecklist(prev=>prev.map((item,idx)=>idx===i?{...item,done:!item.done}:item));
+  const doneCount=checklist.filter(c=>c.done).length;
   return <div>
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.redDim} 0%,transparent 50%)`}}>
       <SH title="Em Andamento — Próximo Jogo"/>
@@ -504,21 +519,12 @@ function AdversarioPage() {
       </div>
     </Card>
     <Card style={{marginBottom:16}}>
-      <SH title="Checklist — Análise de Adversário"/>
-      {[
-        {label:"Jogos do adversário baixados (Wyscout/InStat)",done:true},
-        {label:"Formação principal e variações identificadas",done:true},
-        {label:"Jogadores-chave + características mapeados",done:false},
-        {label:"Pontos fortes analisados",done:false},
-        {label:"Vulnerabilidades exploráveis identificadas",done:false},
-        {label:"Transições (ofensiva + defensiva) analisadas",done:false},
-        {label:"Bolas paradas do adversário (ofensivas + defensivas)",done:false},
-        {label:"Clips editados e organizados por tema",done:false},
-        {label:"Apresentação montada (PPT/PDF)",done:false},
-        {label:"Revisão Head Scout (Caio)",done:false},
-        {label:"Entrega ao corpo técnico (D-2)",done:false},
-      ].map((item,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<8?`1px solid ${C.border}08`:"none"}}>
+      <SH title="Checklist — Análise de Adversário" count={`${doneCount}/${checklist.length}`}/>
+      <div style={{marginBottom:10}}>
+        <ProgressBar pct={Math.round((doneCount/checklist.length)*100)} color={doneCount===checklist.length?C.green:C.yellow}/>
+      </div>
+      {checklist.map((item,i)=>(
+        <div key={i} onClick={()=>toggleCheck(i)} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<checklist.length-1?`1px solid ${C.border}08`:"none",cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
           {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
           <span style={{fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none"}}>{item.label}</span>
         </div>
