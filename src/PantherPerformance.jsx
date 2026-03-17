@@ -11,7 +11,7 @@ import {
   ArrowLeft, Play, FileText, UserCheck, Award, Crosshair, Flag,
   BookOpen, Send, Settings, ChevronDown, ChevronUp, Layers,
   Dumbbell, Circle, MapPin, Lock, Clipboard, Package, User,
-  CheckSquare, XCircle, Timer, RefreshCw,
+  CheckSquare, XCircle, Timer, RefreshCw, Sun, Moon,
 } from "lucide-react";
 
 // ═══════════════════════════════════════════════
@@ -128,7 +128,7 @@ function useSheets() {
 // DESIGN SYSTEM
 // ═══════════════════════════════════════════════
 // Botafogo SP identity: preto + vermelho + branco
-const C = {
+const CDark = {
   bg: "#0a0a0e", bgCard: "rgba(18,18,24,0.65)", bgCardHover: "rgba(26,26,34,0.75)",
   bgInput: "rgba(12,12,18,0.8)", bgSidebar: "rgba(10,10,14,0.92)",
   border: "rgba(255,255,255,0.07)", borderActive: "#d4232b",
@@ -142,51 +142,72 @@ const C = {
   purple: "#8b5cf6", purpleDim: "rgba(139,92,246,0.12)",
   cyan: "#06b6d4", cyanDim: "rgba(6,182,212,0.12)",
   glass: "backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);",
+  shadow: "0 4px 24px rgba(0,0,0,0.25)",
+  shadowHover: "0 8px 32px rgba(0,0,0,0.35)",
 };
-const font = "'JetBrains Mono','SF Mono','Fira Code',monospace";
-const fontD = "'Oswald','Bebas Neue',sans-serif";
+const CLight = {
+  bg: "#f0f2f5", bgCard: "rgba(255,255,255,0.82)", bgCardHover: "rgba(245,246,250,0.92)",
+  bgInput: "rgba(240,241,246,0.9)", bgSidebar: "rgba(255,255,255,0.96)",
+  border: "rgba(0,0,0,0.08)", borderActive: "#d4232b",
+  gold: "#c41e28", goldLight: "#e02d2d", goldDim: "rgba(196,30,40,0.08)",
+  goldGlow: "rgba(196,30,40,0.15)",
+  text: "#1a1b2e", textDim: "#8a92a4", textMid: "#5a6070",
+  green: "#16a34a", greenDim: "rgba(22,163,74,0.08)",
+  red: "#dc2626", redDim: "rgba(220,38,38,0.07)",
+  yellow: "#d97706", yellowDim: "rgba(217,119,6,0.08)",
+  blue: "#2563eb", blueDim: "rgba(37,99,235,0.08)",
+  purple: "#7c3aed", purpleDim: "rgba(124,58,237,0.08)",
+  cyan: "#0891b2", cyanDim: "rgba(8,145,178,0.08)",
+  glass: "backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);",
+  shadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)",
+  shadowHover: "0 4px 20px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06)",
+};
+let C = CDark;
+const font = "'Inter','DM Sans','Helvetica Neue',Arial,sans-serif";
+const fontD = "'DM Sans','Inter','Helvetica Neue',sans-serif";
 
 // ═══════════════════════════════════════════════
 // DATA — Paulistão 2026 (Wyscout real) + contexto BFSA
 // ═══════════════════════════════════════════════
+const PB = "https://raw.githubusercontent.com/caiofelipead/performance_dashboard/main/public/players/";
 const ATLETAS = [
-  { id:1,nome:"Victor Souza",pos:"GK",num:1,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:2,nome:"Jonathan Lemos",pos:"RB",num:2,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:3,nome:"Éricson",pos:"CB",num:3,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:4,nome:"Gustavo Vilar",pos:"CB",num:4,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:5,nome:"Leandro Maciel",pos:"CDM",num:5,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:6,nome:"Patrick Brey",pos:"LB",num:6,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:7,nome:"Kelvin Giacobe",pos:"RW",num:7,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:8,nome:"Éverton Morelli",pos:"CDM",num:8,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:9,nome:"Hygor Cléber",pos:"ST",num:9,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:10,nome:"Rafael Gava",pos:"CAM",num:10,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:11,nome:"Jéfferson Nem",pos:"LW",num:11,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:12,nome:"Jordan Esteves",pos:"GK",num:12,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:13,nome:"Wallace Fortuna",pos:"CB",num:13,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:14,nome:"Carlão",pos:"CB",num:14,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:15,nome:"Guilherme Mariano",pos:"CB",num:15,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:16,nome:"Matheus Sales",pos:"CDM",num:16,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:17,nome:"Guilherme Queiróz",pos:"ST",num:17,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:19,nome:"Maranhão",pos:"RW",num:19,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:20,nome:"Marquinho",pos:"CAM",num:20,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:21,nome:"Luizão",pos:"ST",num:21,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:22,nome:"Gabriel Inocêncio",pos:"RB",num:22,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:23,nome:"Wesley Pinheiro",pos:"LW",num:23,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:25,nome:"Brenno Klippel",pos:"GK",num:25,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:26,nome:"Felipe Vieira",pos:"LB",num:26,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:27,nome:"Darlan Batista",pos:"CB",num:27,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:29,nome:"Thiaguinho",pos:"CDM",num:29,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:30,nome:"Zé Hugo",pos:"RW",num:30,status:"ativo",foto:"",videos:"",tend:"subindo",cat:"profissional" },
-  { id:31,nome:"Pedro Tortello",pos:"CDM",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:32,nome:"Thalles",pos:"ST",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:33,nome:"Hebert Badaró",pos:"CB",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:34,nome:"Érik",pos:"CDM",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:35,nome:"Adriano",pos:"GK",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:36,nome:"Whalacy Ermeliano",pos:"LW",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:37,nome:"Yuri Felipe",pos:"CDM",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:38,nome:"Henrique Teles",pos:"LB",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
+  { id:1,nome:"Victor Souza",pos:"GK",num:1,status:"ativo",foto:`${PB}VICTOR%20SOUZA.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:2,nome:"Jonathan Lemos",pos:"RB",num:2,status:"ativo",foto:`${PB}JONATHAN.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:3,nome:"Éricson",pos:"CB",num:3,status:"ativo",foto:`${PB}ERICSON.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:4,nome:"Gustavo Vilar",pos:"CB",num:4,status:"ativo",foto:`${PB}GUSTAVO%20VILAR.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:5,nome:"Leandro Maciel",pos:"CDM",num:5,status:"ativo",foto:`${PB}LEANDRO%20MACIEL.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:6,nome:"Patrick Brey",pos:"LB",num:6,status:"ativo",foto:`${PB}PATRICK%20BREY.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:7,nome:"Kelvin Giacobe",pos:"RW",num:7,status:"ativo",foto:`${PB}KELVIN.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:8,nome:"Éverton Morelli",pos:"CDM",num:8,status:"ativo",foto:`${PB}MORELLI.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:9,nome:"Hygor Cléber",pos:"ST",num:9,status:"ativo",foto:`${PB}HYGOR.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:10,nome:"Rafael Gava",pos:"CAM",num:10,status:"ativo",foto:`${PB}RAFAEL%20GAVA.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:11,nome:"Jéfferson Nem",pos:"LW",num:11,status:"ativo",foto:`${PB}JEFFERSON%20NEM.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:12,nome:"Jordan Esteves",pos:"GK",num:12,status:"ativo",foto:`${PB}JORDAN.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:13,nome:"Wallace Fortuna",pos:"CB",num:13,status:"ativo",foto:`${PB}WALLACE.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:14,nome:"Carlão",pos:"CB",num:14,status:"ativo",foto:`${PB}CARLOS%20EDUARDO.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:15,nome:"Guilherme Mariano",pos:"CB",num:15,status:"ativo",foto:`${PB}GUI%20MARIANO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:16,nome:"Matheus Sales",pos:"CDM",num:16,status:"ativo",foto:`${PB}MATHEUS%20SALES.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:17,nome:"Guilherme Queiróz",pos:"ST",num:17,status:"ativo",foto:`${PB}GUILHERME%20QUEIROZ.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:19,nome:"Maranhão",pos:"RW",num:19,status:"ativo",foto:`${PB}MARANHAO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:20,nome:"Marquinho",pos:"CAM",num:20,status:"ativo",foto:`${PB}MARQUINHO%20JR..png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:21,nome:"Luizão",pos:"ST",num:21,status:"ativo",foto:`${PB}LUIZAO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:22,nome:"Gabriel Inocêncio",pos:"RB",num:22,status:"ativo",foto:`${PB}GABRIEL%20INOCENCIO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:23,nome:"Wesley Pinheiro",pos:"LW",num:23,status:"ativo",foto:`${PB}WESLEY.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:25,nome:"Brenno Klippel",pos:"GK",num:25,status:"ativo",foto:`${PB}BRENNO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:26,nome:"Felipe Vieira",pos:"LB",num:26,status:"ativo",foto:`${PB}FELIPE%20VIEIRA.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:27,nome:"Darlan Batista",pos:"CB",num:27,status:"ativo",foto:`${PB}DARLAN.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:29,nome:"Thiaguinho",pos:"CDM",num:29,status:"ativo",foto:`${PB}THIAGUINHO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:30,nome:"Zé Hugo",pos:"RW",num:30,status:"ativo",foto:`${PB}ZE%20HUGO.png`,videos:"",tend:"subindo",cat:"profissional" },
+  { id:31,nome:"Pedro Tortello",pos:"CDM",num:0,status:"ativo",foto:`${PB}PEDRO%20TORTELLO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:32,nome:"Thalles",pos:"ST",num:0,status:"ativo",foto:`${PB}THALLES.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:33,nome:"Hebert Badaró",pos:"CB",num:0,status:"ativo",foto:`${PB}HEBERT.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:34,nome:"Érik",pos:"CDM",num:0,status:"ativo",foto:`${PB}ERIK.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:35,nome:"Adriano",pos:"GK",num:0,status:"ativo",foto:`${PB}ADRIANO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:36,nome:"Whalacy Ermeliano",pos:"LW",num:0,status:"ativo",foto:`${PB}WHALACY.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:37,nome:"Yuri Felipe",pos:"CDM",num:0,status:"ativo",foto:`${PB}YURI.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:38,nome:"Henrique Teles",pos:"LB",num:0,status:"ativo",foto:`${PB}HENRIQUE%20TELES.png`,videos:"",tend:"estavel",cat:"profissional" },
   { id:39,nome:"Felipe Penha",pos:"CAM",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
-  { id:40,nome:"Pedrinho",pos:"RB",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
+  { id:40,nome:"Pedrinho",pos:"RB",num:0,status:"ativo",foto:`${PB}PEDRINHO.png`,videos:"",tend:"estavel",cat:"profissional" },
 ];
 
 // ═══════════════════════════════════════════════
@@ -313,11 +334,11 @@ const PlatBadge = ({p}) => {
   return <Badge color={m[p]||C.textDim}>{p.replace("_"," ")}</Badge>;
 };
 const StatCard = ({label,value,sub,icon:I,accent=C.gold}) => (
-  <div style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,boxShadow:"0 4px 24px rgba(0,0,0,0.2)"}}>
-    <div style={{width:40,height:40,borderRadius:6,background:`${accent}15`,display:"flex",alignItems:"center",justifyContent:"center"}}><I size={18} color={accent}/></div>
+  <div style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:14,boxShadow:C.shadow}}>
+    <div style={{width:40,height:40,borderRadius:8,background:`${accent}15`,display:"flex",alignItems:"center",justifyContent:"center"}}><I size={18} color={accent}/></div>
     <div>
       <div style={{fontSize:22,fontWeight:700,fontFamily:fontD,color:C.text,letterSpacing:"0.02em"}}>{value}</div>
-      <div style={{fontSize:10,color:C.textDim,fontFamily:font,textTransform:"uppercase",letterSpacing:"0.1em"}}>{label}</div>
+      <div style={{fontSize:10,color:C.textDim,fontFamily:font,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:500}}>{label}</div>
       {sub&&<div style={{fontSize:10,color:C.textMid,fontFamily:font,marginTop:1}}>{sub}</div>}
     </div>
   </div>
@@ -348,7 +369,7 @@ const ProgressBar = ({pct,color=C.green}) => (
   </div>
 );
 const Card = ({children,onClick,style:s}) => (
-  <div onClick={onClick} style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:8,padding:16,cursor:onClick?"pointer":"default",transition:"all 0.2s ease",boxShadow:"0 4px 24px rgba(0,0,0,0.25)",...s}} onMouseEnter={e=>{if(onClick){e.currentTarget.style.borderColor=C.gold;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px ${C.gold}33`}}} onMouseLeave={e=>{if(onClick){e.currentTarget.style.borderColor="rgba(255,255,255,0.07)";e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 24px rgba(0,0,0,0.25)"}}}>
+  <div onClick={onClick} style={{background:C.bgCard,backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",border:`1px solid ${C.border}`,borderRadius:10,padding:16,cursor:onClick?"pointer":"default",transition:"all 0.2s ease",boxShadow:C.shadow,...s}} onMouseEnter={e=>{if(onClick){e.currentTarget.style.borderColor=C.gold;e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`${C.shadowHover}, 0 0 0 1px ${C.gold}33`}}} onMouseLeave={e=>{if(onClick){e.currentTarget.style.borderColor=C.border;e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=C.shadow}}}>
     {children}
   </div>
 );
@@ -907,7 +928,11 @@ export default function PantherPerformance() {
   const [time,setTime]=useState(new Date());
   const [tarefas,setTarefas]=useState([]);
   const [showAddTarefa,setShowAddTarefa]=useState(false);
+  const [isDark,setIsDark]=useState(true);
   const sheets = useSheets();
+
+  // Update theme colors before render
+  C = isDark ? CDark : CLight;
 
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),60000);return()=>clearInterval(t)},[]);
   useEffect(()=>{sheets.sync()},[]);// eslint-disable-line
@@ -950,16 +975,17 @@ export default function PantherPerformance() {
   const toggleSection=(s)=>setCollapsed(p=>({...p,[s]:!p[s]}));
 
   return (
-    <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,display:"flex"}}>
+    <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,display:"flex",transition:"background 0.3s ease, color 0.3s ease"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:${C.bg}}::-webkit-scrollbar-thumb{background:${C.border};border-radius:3px}::-webkit-scrollbar-thumb:hover{background:${C.gold}44}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:${C.bg}}::-webkit-scrollbar-thumb{background:${isDark?"rgba(255,255,255,0.12)":"rgba(0,0,0,0.15)"};border-radius:3px}::-webkit-scrollbar-thumb:hover{background:${C.gold}44}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        body{transition:background 0.3s ease}
       `}</style>
 
       {/* SIDEBAR */}
-      <div style={{width:210,minHeight:"100vh",background:C.bgSidebar,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:10,overflowY:"auto"}}>
+      <div style={{width:210,minHeight:"100vh",background:C.bgSidebar,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderRight:`1px solid ${C.border}`,display:"flex",flexDirection:"column",position:"fixed",left:0,top:0,bottom:0,zIndex:10,overflowY:"auto",transition:"background 0.3s ease, border-color 0.3s ease"}}>
         <div style={{padding:"16px 14px",borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:10}}>
           <img src="/3154_imgbank_1685113109.png" alt="Botafogo FC" style={{width:36,height:36,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>
           <div>
@@ -988,9 +1014,13 @@ export default function PantherPerformance() {
           ))}
         </div>
         <div style={{padding:"10px 14px",borderTop:`1px solid ${C.border}`}}>
-          <button onClick={sheets.sync} disabled={sheets.loading} style={{width:"100%",padding:"6px 8px",background:sheets.loading?C.bgInput:C.goldDim,border:`1px solid ${C.border}`,borderRadius:4,cursor:sheets.loading?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:6}}>
+          <button onClick={()=>setIsDark(d=>!d)} style={{width:"100%",padding:"7px 8px",background:isDark?C.bgInput:`${C.gold}10`,border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:8,transition:"all 0.2s ease"}}>
+            {isDark?<Sun size={12} color={C.yellow}/>:<Moon size={12} color={C.gold}/>}
+            <span style={{fontFamily:font,fontSize:10,color:C.textMid,fontWeight:500}}>{isDark?"Modo Claro":"Modo Escuro"}</span>
+          </button>
+          <button onClick={sheets.sync} disabled={sheets.loading} style={{width:"100%",padding:"6px 8px",background:sheets.loading?C.bgInput:C.goldDim,border:`1px solid ${C.border}`,borderRadius:6,cursor:sheets.loading?"wait":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,marginBottom:6}}>
             <RefreshCw size={10} color={C.gold} style={{animation:sheets.loading?"spin 1s linear infinite":"none"}}/>
-            <span style={{fontFamily:font,fontSize:9,color:C.gold}}>{sheets.loading?"Sincronizando...":"Sync Google Sheets"}</span>
+            <span style={{fontFamily:font,fontSize:9,color:C.gold,fontWeight:500}}>{sheets.loading?"Sincronizando...":"Sync Google Sheets"}</span>
           </button>
           {sheets.lastSync && <div style={{fontFamily:font,fontSize:8,color:C.green,textAlign:"center"}}>✓ {sheets.lastSync}</div>}
           {sheets.error && <div style={{fontFamily:font,fontSize:8,color:C.red,textAlign:"center"}}>✗ Erro sync</div>}
