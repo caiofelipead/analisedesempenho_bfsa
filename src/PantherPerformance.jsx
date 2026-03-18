@@ -815,13 +815,15 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
   const posM = POS_METRICS[a.pos] || POS_METRICS["Volante"];
   const posKeys = posM.keys;
 
-  // Compute aggregated values for position keys
+  // Compute aggregated values for position keys (per 90 min)
   const posValues = {};
   posKeys.forEach(({k}) => {
     const vals = aInd.map(r => r[k] || 0);
+    const total = vals.reduce((s, v) => s + v, 0);
     posValues[k] = {
-      total: vals.reduce((s, v) => s + v, 0),
-      avg: vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0,
+      total,
+      avg: vals.length > 0 ? total / vals.length : 0,
+      per90: totalMin > 0 ? (total / totalMin) * 90 : (vals.length > 0 ? total / vals.length : 0),
       data: vals,
     };
   });
@@ -921,11 +923,11 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
       <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(posKeys.length,5)},1fr)`,gap:8}}>
         {posKeys.map(({k,label},i)=>{
           const v = posValues[k];
-          const displayVal = k === "min" ? v.total : v.avg;
+          const displayVal = k === "min" ? v.total : v.per90;
           const isDecimal = k === "xg" || k === "gols" || k === "assist";
           return <div key={i} style={{textAlign:"center",padding:"10px 6px",borderRadius:4,background:C.bgInput,border:`1px solid ${C.border}`}}>
             <div style={{fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700}}>{totalJogos > 0 ? (isDecimal ? displayVal.toFixed(2) : displayVal.toFixed(k==="min"?0:1)) : "—"}</div>
-            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{label}{k!=="min"?" /jogo":""}</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{label}{k!=="min"?" /90":""}</div>
           </div>;
         })}
       </div>
