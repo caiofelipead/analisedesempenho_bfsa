@@ -181,6 +181,7 @@ function mapVideos(rows) {
       : tipoRaw.includes("relat") ? "analise_adversario"
       : tipoRaw.includes("prelec") ? "prelecao"
       : (tipoRaw.includes("adv") || tipoRaw.includes("análise de adv") || tipoRaw.includes("analise de adv")) ? "analise_adversario"
+      : (tipoRaw.includes("bola") || tipoRaw.includes("parada")) && tipoRaw.includes("goleiro") ? "bola_parada_goleiro"
       : tipoRaw.includes("bola") || tipoRaw.includes("parada") ? "bola_parada"
       : tipoRaw.includes("modelo") ? "modelo_jogo"
       : tipoRaw.includes("treino") ? "treino"
@@ -1115,8 +1116,8 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
 function VideosPage({videos=[],athleteMode=false,athleteInfo=null,partidas=[],calendario=[]}) {
   const [search,setSearch]=useState("");
   const [ft,setFt]=useState("TODOS");
-  const tipos=["TODOS","jogo_completo","clip_individual","analise_adversario","treino","prelecao","bola_parada","modelo_jogo"];
-  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",modelo_jogo:"Modelo Jogo"};
+  const tipos=["TODOS","jogo_completo","clip_individual","analise_adversario","treino","prelecao","bola_parada","bola_parada_goleiro","modelo_jogo"];
+  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",bola_parada_goleiro:"BP Goleiro",modelo_jogo:"Modelo Jogo"};
   const filtered=videos.filter(v=>(v.titulo.toLowerCase().includes(search.toLowerCase()))&&(ft==="TODOS"||v.tipo===ft));
   const escudoMap=useMemo(()=>Object.fromEntries([...partidas,...calendario].filter(x=>x.escudo).map(x=>[x.adv?.toLowerCase(),x.escudo])),[partidas,calendario]);
 
@@ -1128,6 +1129,7 @@ function VideosPage({videos=[],athleteMode=false,athleteInfo=null,partidas=[],ca
     treino:["#1b5e20","#2e7d32"],
     prelecao:["#e65100","#ff6d00"],
     bola_parada:["#4a148c","#7b1fa2"],
+    bola_parada_goleiro:["#1a237e","#283593"],
     modelo_jogo:["#01579b","#0288d1"],
   };
   // Platform icons mapping
