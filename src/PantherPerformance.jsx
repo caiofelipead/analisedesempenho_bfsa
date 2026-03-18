@@ -1068,29 +1068,72 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
 // ═══════════════════════════════════════════════
 // PAGE: VÍDEOS
 // ═══════════════════════════════════════════════
-function VideosPage({videos=[]}) {
+function VideosPage({videos=[],athleteMode=false}) {
   const [search,setSearch]=useState("");
   const [ft,setFt]=useState("TODOS");
   const tipos=["TODOS","jogo_completo","clip_individual","analise_adversario","treino","prelecao","bola_parada","modelo_jogo"];
   const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",modelo_jogo:"Modelo Jogo"};
   const filtered=videos.filter(v=>(v.titulo.toLowerCase().includes(search.toLowerCase()))&&(ft==="TODOS"||v.tipo===ft));
+
+  // Color palette for video thumbnails based on type
+  const thumbColors={
+    clip_individual:["#d4232b","#ff4757"],
+    jogo_completo:["#1a1a2e","#16213e"],
+    analise_adversario:["#0f3460","#533483"],
+    treino:["#1b5e20","#2e7d32"],
+    prelecao:["#e65100","#ff6d00"],
+    bola_parada:["#4a148c","#7b1fa2"],
+    modelo_jogo:["#01579b","#0288d1"],
+  };
+  // Platform icons mapping
+  const platIcon={google_drive:"GD",youtube:"YT",vimeo:"VM",wyscout:"WS",instat:"IN"};
+
   return <div>
     <SearchBar ph="Buscar vídeo..." val={search} onChange={setSearch}/>
-    <Tabs items={tipos.map(t=>tipoLabel[t]||t)} active={tipoLabel[ft]||ft} onChange={label=>{const key=Object.entries(tipoLabel).find(([k,v])=>v===label);setFt(key?key[0]:label==="TODOS"?"TODOS":label);}}/>
-    {videos.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center",background:C.bgCard,borderRadius:6,border:`1px solid ${C.border}`}}>Nenhum vídeo carregado. Sincronize com Google Sheets para carregar os vídeos da planilha.</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
+    {!athleteMode&&<Tabs items={tipos.map(t=>tipoLabel[t]||t)} active={tipoLabel[ft]||ft} onChange={label=>{const key=Object.entries(tipoLabel).find(([k,v])=>v===label);setFt(key?key[0]:label==="TODOS"?"TODOS":label);}}/>}
+    {videos.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center",background:C.bgCard,borderRadius:6,border:`1px solid ${C.border}`}}>{athleteMode?"Nenhum vídeo individual disponível no momento.":"Nenhum vídeo carregado. Sincronize com Google Sheets para carregar os vídeos da planilha."}</div>}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
       {filtered.map(v=>{
         const videoLink = v.link || v.linkAlt || "";
-        return <Card key={v.id} onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined}>
-          <div style={{width:"100%",height:80,borderRadius:4,marginBottom:10,background:`linear-gradient(135deg,${C.bgInput},${C.bgCardHover})`,display:"flex",alignItems:"center",justifyContent:"center",position:"relative"}}>
-            <div style={{width:38,height:38,borderRadius:"50%",background:`${C.gold}33`,display:"flex",alignItems:"center",justifyContent:"center"}}><Play size={16} color={C.gold} fill={C.gold}/></div>
-            {v.dur&&<span style={{position:"absolute",bottom:4,right:6,fontFamily:font,fontSize:9,color:C.text,background:"rgba(0,0,0,0.7)",padding:"1px 5px",borderRadius:2}}>{v.dur}</span>}
-            {videoLink&&<span style={{position:"absolute",top:4,right:6,fontFamily:font,fontSize:8,color:C.green,background:"rgba(0,0,0,0.7)",padding:"1px 5px",borderRadius:2}}>LINK</span>}
+        const colors = thumbColors[v.tipo] || ["#2a2a3e","#3a3a4e"];
+        return <div key={v.id} onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined} style={{
+          background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",
+          cursor:videoLink?"pointer":"default",transition:"all 0.2s ease",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"
+        }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.25)";e.currentTarget.style.borderColor=colors[0]+"66"}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,0.15)";e.currentTarget.style.borderColor=C.border}}>
+          {/* Thumbnail cover */}
+          <div style={{
+            width:"100%",height:120,position:"relative",overflow:"hidden",
+            background:`linear-gradient(135deg, ${colors[0]}, ${colors[1]})`
+          }}>
+            {/* Decorative pattern */}
+            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)"}}/>
+            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%)"}}/>
+            {/* Stripe accent */}
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, ${C.gold}, ${colors[0]})`}}/>
+            {/* Play button */}
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:48,height:48,borderRadius:"50%",background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,0.2)",transition:"all 0.2s"}}>
+              <Play size={20} color="#fff" fill="#fff" style={{marginLeft:2}}/>
+            </div>
+            {/* Duration badge */}
+            {v.dur&&<span style={{position:"absolute",bottom:8,right:8,fontFamily:font,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.65)",padding:"2px 8px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)"}}>{v.dur}</span>}
+            {/* Platform badge on thumbnail */}
+            {v.plat&&<span style={{position:"absolute",top:8,left:8,fontFamily:fontD,fontSize:9,color:"#fff",background:"rgba(0,0,0,0.55)",padding:"2px 8px",borderRadius:4,fontWeight:700,letterSpacing:"0.05em",backdropFilter:"blur(4px)",textTransform:"uppercase"}}>{platIcon[v.plat]||v.plat}</span>}
+            {/* Link indicator */}
+            {videoLink&&<span style={{position:"absolute",top:8,right:8,fontFamily:font,fontSize:8,color:"#4ade80",background:"rgba(0,0,0,0.55)",padding:"2px 6px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:3}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:"#4ade80",display:"inline-block"}}/>LINK
+            </span>}
+            {/* Type label overlay */}
+            <div style={{position:"absolute",bottom:8,left:8,fontFamily:fontD,fontSize:9,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>{tipoLabel[v.tipo]||v.tipo}</div>
           </div>
-          <div style={{fontFamily:font,fontSize:12,color:C.text,fontWeight:600,marginBottom:4}}>{v.titulo}</div>
-          {v.atleta&&<div style={{fontFamily:font,fontSize:10,color:C.gold,marginBottom:4}}>Atleta: {v.atleta}</div>}
-          <div style={{display:"flex",gap:4}}><PlatBadge p={v.plat}/><Badge>{tipoLabel[v.tipo]||v.tipo}</Badge></div>
-        </Card>;
+          {/* Info section */}
+          <div style={{padding:"12px 14px"}}>
+            <div style={{fontFamily:font,fontSize:13,color:C.text,fontWeight:600,marginBottom:4,lineHeight:1.3}}>{v.titulo}</div>
+            {v.atleta&&<div style={{fontFamily:font,fontSize:10,color:C.gold,marginBottom:6,display:"flex",alignItems:"center",gap:4}}>
+              <User size={10}/>{v.atleta}
+            </div>}
+            {v.data&&<div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{v.data}{v.comp?` · ${v.comp}`:""}{v.rodada?` · ${v.rodada}`:""}</div>}
+          </div>
+        </div>;
       })}
     </div>
   </div>;
@@ -1200,7 +1243,9 @@ const AUTH_USERS = {
   caiofelipe: "analisebfsa",
   fillipesoutto: "analisebfsa",
   andreleite: "analisebfsa",
+  atleta: "atleta",
 };
+const ATHLETE_USER = "atleta";
 
 function LoginPage({ onLogin }) {
   const [user, setUser] = useState("");
@@ -1312,7 +1357,8 @@ function LoginPage({ onLogin }) {
 
 export default function PantherPerformance() {
   const [authedUser,setAuthedUser]=useState(()=>sessionStorage.getItem("bfsa_user")||null);
-  const [page,setPage]=useState("dashboard");
+  const isAthlete = authedUser === ATHLETE_USER;
+  const [page,setPage]=useState(()=>sessionStorage.getItem("bfsa_user")===ATHLETE_USER?"videos":"dashboard");
   const [sub,setSub]=useState(null);
   const [selId,setSelId]=useState(null);
   const [collapsed,setCollapsed]=useState({});
@@ -1323,7 +1369,7 @@ export default function PantherPerformance() {
   const [advChecklist,setAdvChecklist]=useState(()=>{try{const s=localStorage.getItem("bfsa_advChecklist");return s?JSON.parse(s):[]}catch{return[]}});
   const sheets = useSheets();
 
-  const handleLogin=(u)=>{sessionStorage.setItem("bfsa_user",u);setAuthedUser(u)};
+  const handleLogin=(u)=>{sessionStorage.setItem("bfsa_user",u);setAuthedUser(u);if(u===ATHLETE_USER)setPage("videos")};
   const handleLogout=()=>{sessionStorage.removeItem("bfsa_user");setAuthedUser(null)};
 
   // Update theme colors before render
@@ -1362,6 +1408,7 @@ export default function PantherPerformance() {
   const atrasadas=tarefas.filter(t=>t.status==="atrasada").length;
 
   const renderPage=()=>{
+    if(isAthlete) return <VideosPage videos={videos.filter(v=>v.tipo==="clip_individual")} athleteMode/>;
     if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
     switch(page){
       case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
@@ -1382,6 +1429,51 @@ export default function PantherPerformance() {
   const allItems=NAV.flatMap(s=>s.items);
   const pageTitle=sub==="atleta-detail"?(ATLETAS.find(a=>a.id===selId)?.nome||"Atleta"):allItems.find(n=>n.id===page)?.label||"Dashboard";
   const toggleSection=(s)=>setCollapsed(p=>({...p,[s]:!p[s]}));
+
+  // Athlete-only layout: no sidebar, clean header with logo + logout
+  if(isAthlete) return (
+    <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,transition:"background 0.3s ease, color 0.3s ease"}}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@300;400;500;600;700&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:${C.bg}}::-webkit-scrollbar-thumb{background:${isDark?"rgba(255,255,255,0.12)":"rgba(0,0,0,0.15)"};border-radius:3px}::-webkit-scrollbar-thumb:hover{background:${C.gold}44}
+        @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        body{transition:background 0.3s ease}
+      `}</style>
+      {/* ATHLETE HEADER */}
+      <div style={{background:C.bgSidebar,backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:`1px solid ${C.border}`,padding:"12px 24px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <img src="/3154_imgbank_1685113109.png" alt="Botafogo FC" style={{width:32,height:32,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>
+          <div>
+            <div style={{fontFamily:fontD,fontSize:15,fontWeight:700,color:C.gold,textTransform:"uppercase",letterSpacing:"0.12em",lineHeight:1}}>BFSA</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",letterSpacing:"0.15em"}}>Portal do Atleta</div>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
+          <button onClick={()=>setIsDark(d=>!d)} style={{background:"none",border:`1px solid ${C.border}`,borderRadius:6,cursor:"pointer",padding:"6px 8px",display:"flex",alignItems:"center",gap:4}}>
+            {isDark?<Sun size={12} color={C.yellow}/>:<Moon size={12} color={C.gold}/>}
+            <span style={{fontFamily:font,fontSize:9,color:C.textMid,fontWeight:500}}>{isDark?"Claro":"Escuro"}</span>
+          </button>
+          <button onClick={sheets.sync} disabled={sheets.loading} style={{background:sheets.loading?C.bgInput:C.goldDim,border:`1px solid ${C.border}`,borderRadius:6,cursor:sheets.loading?"wait":"pointer",padding:"6px 8px",display:"flex",alignItems:"center",gap:4}}>
+            <RefreshCw size={10} color={C.gold} style={{animation:sheets.loading?"spin 1s linear infinite":"none"}}/>
+            <span style={{fontFamily:font,fontSize:9,color:C.gold,fontWeight:500}}>{sheets.loading?"Sincronizando...":"Sync"}</span>
+          </button>
+          <button onClick={handleLogout} title="Sair" style={{background:"none",border:`1px solid ${C.border}`,cursor:"pointer",padding:"6px 8px",borderRadius:6,display:"flex",alignItems:"center",gap:4}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.red} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+            <XCircle size={12} color={C.red}/>
+            <span style={{fontFamily:font,fontSize:9,color:C.red,fontWeight:500}}>Sair</span>
+          </button>
+        </div>
+      </div>
+      {/* ATHLETE CONTENT */}
+      <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 20px"}}>
+        <div style={{marginBottom:20,paddingBottom:12,borderBottom:`1px solid ${C.border}`}}>
+          <h1 style={{fontFamily:fontD,fontSize:22,fontWeight:700,color:C.text,textTransform:"uppercase",letterSpacing:"0.06em"}}>Meus Vídeos</h1>
+          <p style={{fontFamily:font,fontSize:11,color:C.textDim,marginTop:4}}>Acesse seus vídeos de análise individual</p>
+        </div>
+        {renderPage()}
+      </div>
+    </div>
+  );
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,display:"flex",transition:"background 0.3s ease, color 0.3s ease"}}>
