@@ -61,6 +61,26 @@ function ptNum(s) {
   return parseFloat(String(s).replace(",", "."));
 }
 
+// Fuzzy column finder — normalizes header names to handle accent/case/slash variations
+function colNorm(s) { return (s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,""); }
+function findCol(row, ...candidates) {
+  // Try exact match first
+  for (const c of candidates) { if (row[c] !== undefined && row[c] !== "") return row[c]; }
+  // Try normalized fuzzy match against all row keys
+  const keys = Object.keys(row);
+  for (const c of candidates) {
+    const cn = colNorm(c);
+    if (!cn) continue;
+    for (const k of keys) {
+      const kn = colNorm(k);
+      if (kn === cn || kn.includes(cn) || cn.includes(kn)) {
+        if (row[k] !== undefined && row[k] !== "") return row[k];
+      }
+    }
+  }
+  return undefined;
+}
+
 async function fetchSheet(gid) {
   const url = `${SHEETS_CSV_BASE}&gid=${gid}`;
   const res = await fetch(url, { redirect: "follow" });
@@ -100,24 +120,27 @@ function mapColetivo(rows) {
 }
 
 function mapIndividual(rows) {
-  return rows.filter(r => (r.Atleta || r.atleta || "").trim()).map((r, i) => ({
+  if (rows.length > 0) {
+    console.log("[BFSA mapIndividual] Sample row keys:", Object.keys(rows[0]), "Sample values:", JSON.stringify(rows[0]).slice(0, 500));
+  }
+  return rows.filter(r => (r.Atleta || r.atleta || findCol(r, "Atleta", "atleta", "Player", "Jogador") || "").trim()).map((r, i) => ({
     id: i + 1,
-    atleta: r.Atleta || r.atleta || "",
-    jogo: r.Jogo || r.jogo || "",
-    comp: r.Competition || r.Comp || r.comp || "",
-    data: r.Date || r.Data || r.data || "",
-    pos: r["Posição"] || r.Posicao || r.posicao || r.Position || "",
-    min: ptNum(r.Minutos || r.Minutes || r.Min),
-    acoes: ptNum(r["Ações totais/bem"] || r["Acoes totais"] || r["Total actions"]),
-    gols: ptNum(r.Golos || r.Gols || r.Goals || r.G),
-    assist: ptNum(r["Assistências"] || r.Assistencias || r.Assists || r.A),
-    remates: ptNum(r["Remates/i"] || r.Remates || r.Shots),
-    xg: ptNum(r.xG || r["xG"]),
-    passesCrt: ptNum(r["Passes/cer"] || r["Passes Certos"] || r["Accurate passes"]),
-    passesLong: ptNum(r["Passes long"] || r["Passes Longos"] || r["Long passes"]),
-    cruz: ptNum(r["Cruzamento"] || r.Cruzamentos || r.Crosses),
-    dribles: ptNum(r["Dribbles/com sucesso"] || r.Dribles || r.Dribbles),
-    duelos: ptNum(r["Duelos/ganhos"] || r.Duelos || r.Duels),
+    atleta: r.Atleta || r.atleta || findCol(r, "Atleta", "atleta", "Player", "Jogador") || "",
+    jogo: r.Jogo || r.jogo || findCol(r, "Jogo", "Adversário", "Adversario", "Match", "Opponent") || "",
+    comp: r.Competition || r.Comp || r.comp || findCol(r, "Competição", "Competicao", "Competition", "Comp") || "",
+    data: r.Date || r.Data || r.data || findCol(r, "Data", "Date") || "",
+    pos: r["Posição"] || r.Posicao || r.posicao || r.Position || findCol(r, "Posição", "Posicao", "Position", "Pos") || "",
+    min: ptNum(findCol(r, "Minutos", "Minutes", "Min", "Mins", "Minutos jogados", "Minutes played")),
+    acoes: ptNum(findCol(r, "Ações totais/bem", "Ações totais", "Acoes totais", "Total actions", "Ações", "Acoes", "Acoes totais/bem sucedidas", "Successful actions", "Actions")),
+    gols: ptNum(findCol(r, "Golos", "Gols", "Goals", "G", "Gol")),
+    assist: ptNum(findCol(r, "Assistências", "Assistencias", "Assists", "A", "Assist")),
+    remates: ptNum(findCol(r, "Remates/i", "Remates", "Shots", "Finalizações", "Finalizacoes", "Chutes")),
+    xg: ptNum(findCol(r, "xG", "Expected goals")),
+    passesCrt: ptNum(findCol(r, "Passes/cer", "Passes Certos", "Accurate passes", "Passes certos", "Passes precisos", "Passes bem sucedidos", "Passes/certos", "Passes cer")),
+    passesLong: ptNum(findCol(r, "Passes long", "Passes Longos", "Long passes", "Passes longos", "Passes longos/precisos", "Long passes accurate")),
+    cruz: ptNum(findCol(r, "Cruzamento", "Cruzamentos", "Crosses", "Cruz", "Cruzamentos certos")),
+    dribles: ptNum(findCol(r, "Dribbles/com sucesso", "Dribles", "Dribbles", "Dribles com sucesso", "Dribles/com sucesso", "Successful dribbles")),
+    duelos: ptNum(findCol(r, "Duelos/ganhos", "Duelos", "Duels", "Duelos ganhos", "Duels won")),
   }));
 }
 
@@ -178,6 +201,12 @@ function useSheets() {
       const v = mapVideos(vidRows);
       const ind = mapIndividual(indRows);
       console.log("[BFSA Sync]", {rawRows:{col:colRows.length,cal:calRows.length,vid:vidRows.length,ind:indRows.length}, mapped:{p:p.length,c:c.length,v:v.length,ind:ind.length}, colHeaders: colRows[0] && Object.keys(colRows[0]), indHeaders: indRows[0] && Object.keys(indRows[0])});
+      if (ind.length > 0) {
+        const sample = ind[0];
+        const nullFields = Object.entries(sample).filter(([,v]) => v === null || v === "").map(([k]) => k);
+        const okFields = Object.entries(sample).filter(([,v]) => v !== null && v !== "").map(([k]) => k);
+        console.log("[BFSA mapIndividual] Fields OK:", okFields, "| Fields NULL:", nullFields);
+      }
       if (p.length > 0) setLivePartidas(p);
       if (c.length > 0) setLiveCalendario(c);
       if (v.length > 0) setLiveVideos(v);
@@ -892,11 +921,11 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
       <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(posKeys.length,5)},1fr)`,gap:8}}>
         {posKeys.map(({k,label},i)=>{
           const v = posValues[k];
-          const displayVal = k === "min" || k === "gols" || k === "assist" || k === "remates" ? v.total : v.avg;
-          const isDecimal = k === "xg";
+          const displayVal = k === "min" ? v.total : v.avg;
+          const isDecimal = k === "xg" || k === "gols" || k === "assist";
           return <div key={i} style={{textAlign:"center",padding:"10px 6px",borderRadius:4,background:C.bgInput,border:`1px solid ${C.border}`}}>
             <div style={{fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700}}>{totalJogos > 0 ? (isDecimal ? displayVal.toFixed(2) : displayVal.toFixed(k==="min"?0:1)) : "—"}</div>
-            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{label}{k!=="min"&&k!=="gols"&&k!=="assist"&&k!=="remates"?" /jogo":""}</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{label}{k!=="min"?" /jogo":""}</div>
           </div>;
         })}
       </div>
