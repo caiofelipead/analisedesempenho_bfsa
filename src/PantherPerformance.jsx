@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import useTarefas from "./useTarefas";
 import {
   BarChart, Bar, RadarChart, Radar, PolarGrid,
@@ -548,17 +548,37 @@ function ModeloJogoPage() {
 // ═══════════════════════════════════════════════
 // PAGE: ADVERSÁRIO
 // ═══════════════════════════════════════════════
+const FIXED_CHECKLIST = [
+  {label:"Relatório PDF",fixed:true},
+  {label:"Vídeo bolas paradas | Goleiros",fixed:true},
+  {label:"Vídeo bolas paradas | Comissão Técnica",fixed:true},
+  {label:"Vídeo Análise de Adversário",fixed:true},
+  {label:"Descritivo individual",fixed:true},
+];
+
 function AdversarioPage({partidas=[],calendario=[],proxAdv,checklist,setChecklist}) {
   const escudoMap=Object.fromEntries([...partidas,...calendario].filter(x=>x.escudo).map(x=>[x.adv,x.escudo]));
   const [editingIdx,setEditingIdx]=useState(null);
   const [editVal,setEditVal]=useState("");
   const [newItem,setNewItem]=useState("");
-  const toggleCheck=(i)=>setChecklist(prev=>prev.map((item,idx)=>idx===i?{...item,done:!item.done}:item));
-  const removeItem=(i)=>setChecklist(prev=>prev.filter((_,idx)=>idx!==i));
-  const addItem=()=>{if(newItem.trim()){setChecklist(prev=>[...prev,{label:newItem.trim(),done:false}]);setNewItem("");}};
-  const startEdit=(i)=>{setEditingIdx(i);setEditVal(checklist[i].label);};
-  const saveEdit=(i)=>{if(editVal.trim()){setChecklist(prev=>prev.map((item,idx)=>idx===i?{...item,label:editVal.trim()}:item));}setEditingIdx(null);};
-  const doneCount=checklist.filter(c=>c.done).length;
+
+  // Merge fixed items with user-added items; fixed items always appear first
+  const mergedChecklist = useMemo(()=>{
+    const fixed = FIXED_CHECKLIST.map(f=>{
+      const saved = checklist.find(c=>c.label===f.label&&c.fixed);
+      return saved ? {...saved,fixed:true} : {...f,done:false};
+    });
+    const custom = checklist.filter(c=>!c.fixed);
+    return [...fixed,...custom];
+  },[checklist]);
+
+  const syncChecklist=(updated)=>{setChecklist(updated);};
+  const toggleCheck=(i)=>{const u=[...mergedChecklist];u[i]={...u[i],done:!u[i].done};syncChecklist(u);};
+  const removeItem=(i)=>{if(mergedChecklist[i].fixed)return;syncChecklist(mergedChecklist.filter((_,idx)=>idx!==i));};
+  const addItem=()=>{if(newItem.trim()){syncChecklist([...mergedChecklist,{label:newItem.trim(),done:false,fixed:false}]);setNewItem("");}};
+  const startEdit=(i)=>{if(mergedChecklist[i].fixed)return;setEditingIdx(i);setEditVal(mergedChecklist[i].label);};
+  const saveEdit=(i)=>{if(editVal.trim()){const u=[...mergedChecklist];u[i]={...u[i],label:editVal.trim()};syncChecklist(u);}setEditingIdx(null);};
+  const doneCount=mergedChecklist.filter(c=>c.done).length;
   return <div>
     {proxAdv && <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.redDim} 0%,transparent 50%)`}}>
       <SH title="Em Andamento — Próximo Jogo"/>
@@ -577,23 +597,22 @@ function AdversarioPage({partidas=[],calendario=[],proxAdv,checklist,setChecklis
       </div>
     </Card>}
     <Card style={{marginBottom:16}}>
-      <SH title="Checklist — Análise de Adversário" count={`${doneCount}/${checklist.length}`}/>
+      <SH title="Checklist — Análise de Adversário" count={`${doneCount}/${mergedChecklist.length}`}/>
       <div style={{marginBottom:10}}>
-        <ProgressBar pct={Math.round((doneCount/checklist.length)*100)} color={doneCount===checklist.length?C.green:C.yellow}/>
+        <ProgressBar pct={mergedChecklist.length?Math.round((doneCount/mergedChecklist.length)*100):0} color={doneCount===mergedChecklist.length?C.green:C.yellow}/>
       </div>
-      {checklist.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:"12px 0",textAlign:"center"}}>Nenhum item no checklist. Adicione abaixo.</div>}
-      {checklist.map((item,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<checklist.length-1?`1px solid ${C.border}08`:"none"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+      {mergedChecklist.map((item,i)=>(
+        <div key={item.fixed?`fixed-${i}`:i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<mergedChecklist.length-1?`1px solid ${C.border}08`:"none"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
           <div style={{cursor:"pointer",display:"flex"}} onClick={()=>toggleCheck(i)}>
             {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
           </div>
           {editingIdx===i?(
             <input value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>saveEdit(i)} onKeyDown={e=>{if(e.key==="Enter")saveEdit(i);if(e.key==="Escape")setEditingIdx(null);}} autoFocus style={{flex:1,fontFamily:font,fontSize:12,color:C.text,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:4,padding:"2px 6px",outline:"none"}}/>
           ):(
-            <span style={{flex:1,fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none",cursor:"pointer"}} onClick={()=>toggleCheck(i)}>{item.label}</span>
+            <span style={{flex:1,fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none",cursor:"pointer"}} onClick={()=>toggleCheck(i)}>{item.label}{item.fixed&&<Lock size={9} color={C.textDim} style={{marginLeft:6,verticalAlign:"middle",opacity:0.4}}/>}</span>
           )}
-          <Edit3 size={12} color={C.textDim} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>startEdit(i)}/>
-          <Trash2 size={12} color={C.red} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>removeItem(i)}/>
+          {!item.fixed&&<Edit3 size={12} color={C.textDim} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>startEdit(i)}/>}
+          {!item.fixed&&<Trash2 size={12} color={C.red} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>removeItem(i)}/>}
         </div>
       ))}
       <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
@@ -1412,8 +1431,10 @@ export default function PantherPerformance() {
   const proxAdv = calendario.length > 0 ? (() => {
     const pending = calendario.find(c => !c.adv_ok);
     const match = pending || calendario[0];
-    const checkDone = advChecklist.filter(c => c.done).length;
-    const checkTotal = advChecklist.length;
+    // Merge fixed + custom items for progress
+    const mergedForPct = [...FIXED_CHECKLIST.map(f=>{const s=advChecklist.find(c=>c.label===f.label&&c.fixed);return s||{...f,done:false};}),...advChecklist.filter(c=>!c.fixed)];
+    const checkDone = mergedForPct.filter(c => c.done).length;
+    const checkTotal = mergedForPct.length;
     const pct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (match.adv_ok ? 100 : 0);
     return { nome: match.adv, data: match.data, comp: `${match.comp} ${match.rodada}`, form: "", escudo: match.escudo || "", progresso: pct };
   })() : null;
