@@ -159,13 +159,15 @@ function mapVideos(rows) {
     const desc = r["Adversário/Descrição"] || r["Título"] || r.Titulo || "";
     const comp = r.Comp || "";
     const rodada = r.Rodada || "";
-    const titulo = desc || [comp, rodada].filter(Boolean).join(" - ") || `Vídeo ${i + 1}`;
     const tipoRaw = (r.Tipo || "").toLowerCase().trim();
     const tipo = tipoRaw.includes("prelec") ? "prelecao"
       : tipoRaw.includes("adv") ? "adversario"
       : tipoRaw.includes("col") ? "coletivo"
       : tipoRaw.includes("ind") ? "clip_individual"
       : tipoRaw || "clip_individual";
+    const dataStr = r.Data || "";
+    let titulo = desc || [comp, rodada].filter(Boolean).join(" - ") || `Vídeo ${i + 1}`;
+    if (tipo === "treino" && dataStr) titulo = `${titulo} — ${dataStr}`;
     return {
       id: i + 1, titulo, tipo,
       plat: r.Plataforma || r.Plat || "google_drive",
@@ -385,7 +387,7 @@ const Card = ({children,onClick,style:s}) => (
 // ═══════════════════════════════════════════════
 // PAGE: DASHBOARD
 // ═══════════════════════════════════════════════
-function DashboardPage({nav,tarefas=[],videos=[],partidas=[],proxAdv}) {
+function DashboardPage({nav,tarefas=[],videos=[],partidas=[],proxAdv,individual=[]}) {
   const ativos=ATLETAS.filter(a=>a.status==="ativo").length;
   const vit=partidas.filter(p=>p.res==="V").length;
   const emp=partidas.filter(p=>p.res==="E").length;
@@ -393,7 +395,8 @@ function DashboardPage({nav,tarefas=[],videos=[],partidas=[],proxAdv}) {
   const atrasadas=tarefas.filter(t=>t.status==="atrasada");
   const pendentes=tarefas.filter(t=>t.status!=="concluida");
   const chartData=partidas.map(p=>({j:`vs ${p.adv}`,r:p.res==="V"?3:p.res==="E"?1:0})).reverse();
-  const subindo=ATLETAS.filter(a=>a.status==="ativo"&&a.tend==="subindo");
+  const tendMap=computeTendencies(individual);
+  const subindo=ATLETAS.filter(a=>a.status==="ativo"&&tendMap[a.id]==="subindo");
 
   return <div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12,marginBottom:20}}>
@@ -442,7 +445,7 @@ function DashboardPage({nav,tarefas=[],videos=[],partidas=[],proxAdv}) {
               <div style={{fontFamily:font,fontSize:12,color:C.text,fontWeight:600}}>{a.nome}</div>
               <div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{a.pos}</div>
             </div>
-            <Tend t={a.tend}/>
+            <Tend t={tendMap[a.id]}/>
           </div>
         ))}
       </Card>
@@ -683,9 +686,10 @@ function TreinosPage() {
 // ═══════════════════════════════════════════════
 // PAGE: ATLETAS
 // ═══════════════════════════════════════════════
-function AtletasPage({nav}) {
+function AtletasPage({nav,individual=[]}) {
   const [search,setSearch]=useState("");
   const [fp,setFp]=useState("TODAS");
+  const tendMap=computeTendencies(individual);
   const posicoes=["TODAS",...new Set(ATLETAS.map(a=>a.pos))];
   const filtered=ATLETAS.filter(a=>{
     const ms=a.nome.toLowerCase().includes(search.toLowerCase());
@@ -696,8 +700,9 @@ function AtletasPage({nav}) {
     <SearchBar ph="Buscar atleta..." val={search} onChange={setSearch}/>
     <Tabs items={posicoes} active={fp} onChange={setFp}/>
     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
-      {filtered.map(a=>(
-        <Card key={a.id} onClick={()=>nav("atleta-detail",a.id)}>
+      {filtered.map(a=>{
+        const t=tendMap[a.id]||"estável";
+        return <Card key={a.id} onClick={()=>nav("atleta-detail",a.id)}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
             {a.foto?<img src={a.foto} alt={a.nome} style={{width:42,height:42,borderRadius:"50%",objectFit:"cover",border:`2px solid ${C.gold}33`}}/>:<div style={{width:42,height:42,borderRadius:"50%",background:`${C.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700,border:`2px solid ${C.gold}33`}}>{a.num||"—"}</div>}
             <div style={{flex:1}}>
@@ -707,10 +712,10 @@ function AtletasPage({nav}) {
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,paddingTop:8,borderTop:`1px solid ${C.border}`}}>
             <div style={{textAlign:"center"}}><div style={{fontFamily:fontD,fontSize:16,color:C.gold}}>{a.pos}</div><div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase"}}>Posição</div></div>
-            <div style={{textAlign:"center"}}><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><Tend t={a.tend}/><span style={{fontFamily:font,fontSize:10,color:C.textDim}}>{a.tend}</span></div><div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase"}}>Tendência</div></div>
+            <div style={{textAlign:"center"}}><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:3}}><Tend t={t}/><span style={{fontFamily:font,fontSize:10,color:C.textDim}}>{t}</span></div><div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase"}}>Tendência</div></div>
           </div>
-        </Card>
-      ))}
+        </Card>;
+      })}
     </div>
   </div>;
 }
@@ -719,6 +724,28 @@ function AtletasPage({nav}) {
 // PAGE: ATLETA DETAIL
 // ═══════════════════════════════════════════════
 const norm = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+
+// Compute dynamic tendency for each athlete based on individual stats
+// Compares average "acoes" (actions) in last 3 games vs previous games
+function computeTendencies(individual) {
+  const tendMap = {};
+  ATLETAS.forEach(a => {
+    const aN = norm(a.nome);
+    const games = individual.filter(r => {
+      const rN = norm(r.atleta);
+      return rN === aN || rN.includes(aN) || aN.includes(rN);
+    }).sort((x, y) => (x.data || "").localeCompare(y.data || ""));
+    if (games.length < 3) { tendMap[a.id] = "estável"; return; }
+    const recent = games.slice(-3);
+    const older = games.slice(0, -3);
+    if (older.length === 0) { tendMap[a.id] = "estável"; return; }
+    const avgRecent = recent.reduce((s, r) => s + (r.acoes || 0), 0) / recent.length;
+    const avgOlder = older.reduce((s, r) => s + (r.acoes || 0), 0) / older.length;
+    const diff = avgOlder > 0 ? (avgRecent - avgOlder) / avgOlder : 0;
+    tendMap[a.id] = diff > 0.05 ? "subindo" : diff < -0.05 ? "descendo" : "estável";
+  });
+  return tendMap;
+}
 
 // ═══════════════════════════════════════════════
 // POSITION-SPECIFIC METRICS — Referencial Teórico
@@ -1334,18 +1361,18 @@ export default function PantherPerformance() {
   const renderPage=()=>{
     if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
     switch(page){
-      case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv}/>;
+      case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;
       case "adversario": return <AdversarioPage partidas={partidas} calendario={calendario} proxAdv={proxAdv} checklist={advChecklist} setChecklist={setAdvChecklist}/>;
       case "prelecao": return <PrelecaoPage videos={videos} proxAdv={proxAdv}/>;
       case "partidas": return <PartidasPage videos={videos} partidas={partidas}/>;
       case "bolas-paradas": return <BolasParadasPage/>;
       case "treinos": return <TreinosPage/>;
-      case "atletas": return <AtletasPage nav={nav}/>;
+      case "atletas": return <AtletasPage nav={nav} individual={individual}/>;
       case "videos": return <VideosPage videos={videos}/>;
       case "analistas": return <AnalistasPage tarefas={tarefas} addTarefa={addTarefa} updateTarefa={updateTarefa} removeTarefa={removeTarefa} showAddTarefa={showAddTarefa} setShowAddTarefa={setShowAddTarefa}/>;
       case "protocolos": return <ProtocolosPage/>;
-      default: return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv}/>;
+      default: return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
     }
   };
 
