@@ -99,6 +99,28 @@ function mapColetivo(rows) {
   }));
 }
 
+function mapIndividual(rows) {
+  return rows.filter(r => (r.Atleta || r.atleta || "").trim()).map((r, i) => ({
+    id: i + 1,
+    atleta: r.Atleta || r.atleta || "",
+    jogo: r.Jogo || r.jogo || "",
+    comp: r.Competition || r.Comp || r.comp || "",
+    data: r.Date || r.Data || r.data || "",
+    pos: r["Posição"] || r.Posicao || r.posicao || r.Position || "",
+    min: ptNum(r.Minutos || r.Minutes || r.Min),
+    acoes: ptNum(r["Ações totais/bem"] || r["Acoes totais"] || r["Total actions"]),
+    gols: ptNum(r.Golos || r.Gols || r.Goals || r.G),
+    assist: ptNum(r["Assistências"] || r.Assistencias || r.Assists || r.A),
+    remates: ptNum(r["Remates/i"] || r.Remates || r.Shots),
+    xg: ptNum(r.xG || r["xG"]),
+    passesCrt: ptNum(r["Passes/cer"] || r["Passes Certos"] || r["Accurate passes"]),
+    passesLong: ptNum(r["Passes long"] || r["Passes Longos"] || r["Long passes"]),
+    cruz: ptNum(r["Cruzamento"] || r.Cruzamentos || r.Crosses),
+    dribles: ptNum(r["Dribbles/com sucesso"] || r.Dribles || r.Dribbles),
+    duelos: ptNum(r["Duelos/ganhos"] || r.Duelos || r.Duels),
+  }));
+}
+
 function mapCalendario(rows) {
   return rows.filter(r => getComp(r) && getAdv(r)).map(r => ({
     comp: getComp(r), rodada: r.Rodada || r.rodada || "", data: r.Data || r.data || "", adv: getAdv(r), local: r.Local || r.local || "",
@@ -140,6 +162,7 @@ function useSheets() {
   const [livePartidas, setLivePartidas] = useState(null);
   const [liveCalendario, setLiveCalendario] = useState(null);
   const [liveVideos, setLiveVideos] = useState(null);
+  const [liveIndividual, setLiveIndividual] = useState(null);
   const [loading, setLoading] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [error, setError] = useState(null);
@@ -147,16 +170,18 @@ function useSheets() {
   const sync = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [colRows, calRows, vidRows] = await Promise.all([
-        fetchSheet(GID.coletivo), fetchSheet(GID.calendario), fetchSheet(GID.videos),
+      const [colRows, calRows, vidRows, indRows] = await Promise.all([
+        fetchSheet(GID.coletivo), fetchSheet(GID.calendario), fetchSheet(GID.videos), fetchSheet(GID.individual),
       ]);
       const p = mapColetivo(colRows);
       const c = mapCalendario(calRows);
       const v = mapVideos(vidRows);
-      console.log("[BFSA Sync]", {rawRows:{col:colRows.length,cal:calRows.length,vid:vidRows.length}, mapped:{p:p.length,c:c.length,v:v.length}, colHeaders: colRows[0] && Object.keys(colRows[0]), calHeaders: calRows[0] && Object.keys(calRows[0])});
+      const ind = mapIndividual(indRows);
+      console.log("[BFSA Sync]", {rawRows:{col:colRows.length,cal:calRows.length,vid:vidRows.length,ind:indRows.length}, mapped:{p:p.length,c:c.length,v:v.length,ind:ind.length}, colHeaders: colRows[0] && Object.keys(colRows[0]), indHeaders: indRows[0] && Object.keys(indRows[0])});
       if (p.length > 0) setLivePartidas(p);
       if (c.length > 0) setLiveCalendario(c);
       if (v.length > 0) setLiveVideos(v);
+      if (ind.length > 0) setLiveIndividual(ind);
       const total = p.length + c.length + v.length;
       if (total === 0 && (colRows.length > 0 || calRows.length > 0)) {
         setError("CSV carregado mas headers não bateram. Veja console (F12).");
@@ -166,7 +191,7 @@ function useSheets() {
     finally { setLoading(false); }
   }, []);
 
-  return { livePartidas, liveCalendario, liveVideos, loading, lastSync, error, sync };
+  return { livePartidas, liveCalendario, liveVideos, liveIndividual, loading, lastSync, error, sync };
 }
 
 // ═══════════════════════════════════════════════
@@ -666,49 +691,276 @@ function AtletasPage({nav}) {
 // PAGE: ATLETA DETAIL
 // ═══════════════════════════════════════════════
 const norm = s => (s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
-function AtletaDetailPage({id,onBack,videos=[],partidas=[]}) {
+
+// ═══════════════════════════════════════════════
+// POSITION-SPECIFIC METRICS — Based on sports science references
+// Ref: Carling et al. (2012) Match analysis; Bradley et al. (2013) High-intensity running;
+// Castellano et al. (2014) Positional demands; Liu et al. (2016) KPIs by position
+// ═══════════════════════════════════════════════
+const POS_METRICS = {
+  "Goleiro": {
+    keys: [{k:"min",label:"Minutos"},{k:"acoes",label:"Ações"},{k:"passesCrt",label:"Passes Certos"},{k:"passesLong",label:"Passes Longos"}],
+    desc: "Para goleiros, a análise foca em distribuição (passes curtos e longos), leitura de jogo e participação na construção. Referência: saída de jogo com pé e lançamentos longos precisos (Bradley et al., 2013).",
+  },
+  "Zagueiro": {
+    keys: [{k:"duelos",label:"Duelos Ganhos"},{k:"passesCrt",label:"Passes Certos"},{k:"passesLong",label:"Passes Longos"},{k:"acoes",label:"Ações Totais"},{k:"min",label:"Minutos"}],
+    desc: "Zagueiros são avaliados por duelos aéreos e terrestres, qualidade de passe na construção, e capacidade de condução. Carling et al. (2012): duelos ganhos e passes longos efetivos são os KPIs primários.",
+  },
+  "Lateral Direito": {
+    keys: [{k:"cruz",label:"Cruzamentos"},{k:"dribles",label:"Dribles"},{k:"duelos",label:"Duelos Ganhos"},{k:"passesCrt",label:"Passes Certos"},{k:"acoes",label:"Ações Totais"}],
+    desc: "Laterais exigem amplitude ofensiva (cruzamentos, dribles) e solidez defensiva (duelos). Castellano et al. (2014): laterais modernos contribuem com ~15% das ações ofensivas da equipe.",
+  },
+  "Lateral Esquerdo": {
+    keys: [{k:"cruz",label:"Cruzamentos"},{k:"dribles",label:"Dribles"},{k:"duelos",label:"Duelos Ganhos"},{k:"passesCrt",label:"Passes Certos"},{k:"acoes",label:"Ações Totais"}],
+    desc: "Laterais exigem amplitude ofensiva (cruzamentos, dribles) e solidez defensiva (duelos). Castellano et al. (2014): laterais modernos contribuem com ~15% das ações ofensivas da equipe.",
+  },
+  "Volante": {
+    keys: [{k:"passesCrt",label:"Passes Certos"},{k:"duelos",label:"Duelos Ganhos"},{k:"acoes",label:"Ações Totais"},{k:"passesLong",label:"Passes Longos"},{k:"min",label:"Minutos"}],
+    desc: "Volantes são o eixo de transição: recuperação e distribuição. Liu et al. (2016): passes progressivos e interceptações são os melhores preditores de desempenho no setor médio defensivo.",
+  },
+  "Meia": {
+    keys: [{k:"passesCrt",label:"Passes Certos"},{k:"assist",label:"Assistências"},{k:"dribles",label:"Dribles"},{k:"xg",label:"xG"},{k:"acoes",label:"Ações Totais"}],
+    desc: "Meias criativos são medidos por passes decisivos, dribles em zonas de finalização e contribuição ofensiva (xG + assistências). Bradley et al. (2013): meias top realizam 2-3x mais ações em terço final.",
+  },
+  "Extremo": {
+    keys: [{k:"dribles",label:"Dribles"},{k:"gols",label:"Gols"},{k:"assist",label:"Assistências"},{k:"cruz",label:"Cruzamentos"},{k:"xg",label:"xG"}],
+    desc: "Extremos são avaliados por capacidade de drible 1v1, finalização, cruzamentos e assistências. Castellano et al. (2014): efetividade em 1v1 e participação direta em gol são os KPIs diferenciais.",
+  },
+  "Atacante": {
+    keys: [{k:"gols",label:"Gols"},{k:"xg",label:"xG"},{k:"remates",label:"Remates"},{k:"duelos",label:"Duelos Ganhos"},{k:"acoes",label:"Ações Totais"}],
+    desc: "Atacantes são avaliados por eficiência finalizadora (gols/xG ratio), volume de remates e envolvimento no jogo. Liu et al. (2016): atacantes de elite mantêm ratio gols/xG > 1.0.",
+  },
+};
+
+// Mini sparkline SVG component
+const Sparkline = ({data, width=120, height=30, color}) => {
+  if (!data || data.length < 2) return null;
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const pts = data.map((v, i) => `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * (height - 4) - 2}`).join(" ");
+  const avg = data.reduce((s, v) => s + v, 0) / data.length;
+  const avgY = height - ((avg - min) / range) * (height - 4) - 2;
+  return <svg width={width} height={height} style={{display:"block"}}>
+    <line x1={0} y1={avgY} x2={width} y2={avgY} stroke={`${color}44`} strokeWidth={1} strokeDasharray="3,3"/>
+    <polyline fill="none" stroke={color} strokeWidth={1.5} points={pts}/>
+    {data.map((v, i) => <circle key={i} cx={(i / (data.length - 1)) * width} cy={height - ((v - min) / range) * (height - 4) - 2} r={2} fill={color}/>)}
+  </svg>;
+};
+
+function AtletaDetailPage({id,onBack,videos=[],partidas=[],individual=[]}) {
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
   const aN = norm(a.nome);
   const aVideos=videos.filter(v=>{ if(v.tipo!=="clip_individual") return false; const vN=norm(v.atleta); return vN===aN || vN.includes(aN) || aN.includes(vN); });
-  const posStats = {
-    GK: ["Defesas","Gols Sofridos","Clean Sheets","xG Sofrido","Saídas"],
-    CB: ["Duelos Aéreos","Interceptações","Cortes","Passes Longos","Duelos%"],
-    RB: ["Cruzamentos","Dribles","Interceptações","Passes Crt","Duelos%"],
-    LB: ["Cruzamentos","Dribles","Interceptações","Passes Crt","Duelos%"],
-    CDM: ["Recuperações","Passes","Interceptações","Duelos%","PPDA contrib"],
-    CAM: ["Passes Decisivos","Finalizações","Dribles","Chances Criadas","xG"],
-    RW: ["Dribles","Finalizações","Cruzamentos","Gols","Assistências"],
-    LW: ["Dribles","Finalizações","Cruzamentos","Gols","Assistências"],
-    ST: ["Gols","xG","Finalizações","Rem no Alvo%","Toques na Área"],
+
+  // Filter individual stats for this athlete
+  const aInd = individual.filter(r => {
+    const rN = norm(r.atleta);
+    return rN === aN || rN.includes(aN) || aN.includes(rN);
+  }).sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+
+  // Aggregate stats
+  const totalJogos = aInd.length;
+  const totalMin = aInd.reduce((s, r) => s + (r.min || 0), 0);
+  const totalGols = aInd.reduce((s, r) => s + (r.gols || 0), 0);
+  const totalAssist = aInd.reduce((s, r) => s + (r.assist || 0), 0);
+  const totalXg = aInd.reduce((s, r) => s + (r.xg || 0), 0);
+  const avgAcoes = totalJogos > 0 ? (aInd.reduce((s, r) => s + (r.acoes || 0), 0) / totalJogos) : 0;
+  const avgDuelos = totalJogos > 0 ? (aInd.reduce((s, r) => s + (r.duelos || 0), 0) / totalJogos) : 0;
+  const avgPassesCrt = totalJogos > 0 ? (aInd.reduce((s, r) => s + (r.passesCrt || 0), 0) / totalJogos) : 0;
+  const avgDribles = totalJogos > 0 ? (aInd.reduce((s, r) => s + (r.dribles || 0), 0) / totalJogos) : 0;
+  const avgCruz = totalJogos > 0 ? (aInd.reduce((s, r) => s + (r.cruz || 0), 0) / totalJogos) : 0;
+
+  // Position-specific metrics
+  const posM = POS_METRICS[a.pos] || POS_METRICS["Volante"];
+  const posKeys = posM.keys;
+
+  // Compute aggregated values for position keys
+  const posValues = {};
+  posKeys.forEach(({k}) => {
+    const vals = aInd.map(r => r[k] || 0);
+    posValues[k] = {
+      total: vals.reduce((s, v) => s + v, 0),
+      avg: vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0,
+      data: vals,
+    };
+  });
+
+  // ── Correlation with collective stats ──
+  // Match individual games to collective games by opponent name
+  const correlationData = aInd.map(r => {
+    const indAdv = norm(r.jogo || "");
+    const match = partidas.find(p => {
+      const pAdv = norm(p.adv || "");
+      return indAdv.includes(pAdv) || pAdv.includes(indAdv);
+    });
+    return { ind: r, col: match || null };
+  }).filter(c => c.col);
+
+  // Compute correlation insights
+  const corrInsights = [];
+  if (correlationData.length >= 3) {
+    // Wins vs losses performance
+    const wins = correlationData.filter(c => c.col.res === "V");
+    const losses = correlationData.filter(c => c.col.res === "D");
+    if (wins.length > 0 && losses.length > 0) {
+      const wAvgAcoes = wins.reduce((s, c) => s + (c.ind.acoes || 0), 0) / wins.length;
+      const lAvgAcoes = losses.reduce((s, c) => s + (c.ind.acoes || 0), 0) / losses.length;
+      const diff = ((wAvgAcoes - lAvgAcoes) / (lAvgAcoes || 1) * 100).toFixed(0);
+      if (Math.abs(diff) > 5) corrInsights.push({ label: "Ações em Vitórias vs Derrotas", valor: `${diff > 0 ? "+" : ""}${diff}%`, pos: diff > 0, desc: `Média de ${wAvgAcoes.toFixed(0)} ações em vitórias vs ${lAvgAcoes.toFixed(0)} em derrotas` });
+    }
+    // Performance in high vs low possession games
+    const highPoss = correlationData.filter(c => c.col.posse != null && c.col.posse >= 50);
+    const lowPoss = correlationData.filter(c => c.col.posse != null && c.col.posse < 50);
+    if (highPoss.length > 0 && lowPoss.length > 0) {
+      const hAvg = highPoss.reduce((s, c) => s + (c.ind.acoes || 0), 0) / highPoss.length;
+      const lAvg = lowPoss.reduce((s, c) => s + (c.ind.acoes || 0), 0) / lowPoss.length;
+      corrInsights.push({ label: "Ações: Posse Alta vs Baixa", valor: `${hAvg.toFixed(0)} vs ${lAvg.toFixed(0)}`, pos: hAvg > lAvg, desc: `Rendimento com posse ≥50% (${highPoss.length} jogos) vs <50% (${lowPoss.length} jogos)` });
+    }
+    // Duels correlation with team PPDA
+    const withPPDA = correlationData.filter(c => c.col.ppda != null && c.ind.duelos != null);
+    if (withPPDA.length >= 3) {
+      const highPPDA = withPPDA.filter(c => c.col.ppda >= 10);
+      const lowPPDA = withPPDA.filter(c => c.col.ppda < 10);
+      if (highPPDA.length > 0 && lowPPDA.length > 0) {
+        const hDuel = highPPDA.reduce((s, c) => s + (c.ind.duelos || 0), 0) / highPPDA.length;
+        const lDuel = lowPPDA.reduce((s, c) => s + (c.ind.duelos || 0), 0) / lowPPDA.length;
+        corrInsights.push({ label: "Duelos: PPDA Alto vs Baixo", valor: `${hDuel.toFixed(1)} vs ${lDuel.toFixed(1)}`, pos: true, desc: `Duelos ganhos quando equipe pressiona menos (PPDA≥10) vs mais (PPDA<10)` });
+      }
+    }
+    // xG individual contribution vs team xG
+    const withXG = correlationData.filter(c => c.col.xg != null && c.ind.xg != null && c.ind.xg > 0);
+    if (withXG.length > 0) {
+      const avgContrib = withXG.reduce((s, c) => s + (c.ind.xg / (c.col.xg || 1)), 0) / withXG.length * 100;
+      corrInsights.push({ label: "Contribuição xG Individual", valor: `${avgContrib.toFixed(1)}%`, pos: avgContrib > 15, desc: `Percentual médio do xG da equipe gerado pelo atleta` });
+    }
+  }
+
+  // ── Longitudinal trend calculation ──
+  const trendColor = (data) => {
+    if (data.length < 3) return C.textDim;
+    const last3 = data.slice(-3);
+    const first3 = data.slice(0, 3);
+    const avgLast = last3.reduce((s, v) => s + v, 0) / last3.length;
+    const avgFirst = first3.reduce((s, v) => s + v, 0) / first3.length;
+    return avgLast > avgFirst * 1.05 ? C.green : avgLast < avgFirst * 0.95 ? C.red : C.yellow;
   };
-  const statsForPos = posStats[a.pos] || ["Jogos","Minutos","Notas"];
+
+  const trendLabel = (data) => {
+    if (data.length < 3) return "Dados insuficientes";
+    const last3 = data.slice(-3);
+    const first3 = data.slice(0, 3);
+    const avgLast = last3.reduce((s, v) => s + v, 0) / last3.length;
+    const avgFirst = first3.reduce((s, v) => s + v, 0) / first3.length;
+    const pct = ((avgLast - avgFirst) / (avgFirst || 1) * 100).toFixed(0);
+    return avgLast > avgFirst * 1.05 ? `↑ +${pct}%` : avgLast < avgFirst * 0.95 ? `↓ ${pct}%` : "→ Estável";
+  };
+
   return <div>
     <button onClick={onBack} style={{background:"none",border:"none",color:C.textDim,cursor:"pointer",fontFamily:font,fontSize:11,display:"flex",alignItems:"center",gap:4,marginBottom:14,padding:0}}><ArrowLeft size={13}/>VOLTAR</button>
+
+    {/* ── PERFIL ── */}
     <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.goldDim} 0%,transparent 50%)`}}>
       <div style={{display:"flex",alignItems:"center",gap:20}}>
         {a.foto?<img src={a.foto} alt={a.nome} style={{width:70,height:70,borderRadius:"50%",objectFit:"cover",border:`3px solid ${C.gold}55`}}/>:<div style={{width:70,height:70,borderRadius:"50%",background:`${C.gold}33`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:fontD,fontSize:32,color:C.gold,fontWeight:700,border:`3px solid ${C.gold}55`}}>{a.num||"—"}</div>}
         <div style={{flex:1}}>
           <div style={{fontFamily:fontD,fontSize:26,color:C.text,fontWeight:700,textTransform:"uppercase"}}>{a.nome}</div>
-          <div style={{display:"flex",gap:8,marginTop:6}}>
+          <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
             <Badge color={C.gold}>{a.pos}</Badge>
             <Badge color={a.status==="ativo"?C.green:C.red}>{a.status}</Badge>
-            <div style={{display:"flex",alignItems:"center",gap:3}}><Tend t={a.tend}/><span style={{fontFamily:font,fontSize:9,color:C.textDim,textTransform:"uppercase"}}>{a.tend}</span></div>
+            {totalJogos>0&&<Badge color={C.text}>{totalJogos}J · {totalMin}min</Badge>}
+            {totalGols>0&&<Badge color={C.green}>{totalGols}G · {totalAssist}A</Badge>}
           </div>
         </div>
       </div>
     </Card>
-    <Card style={{marginBottom:14}}><SH title={`Stats por Posição — ${a.pos}`}/>
-      <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(statsForPos.length,5)},1fr)`,gap:8}}>
-        {statsForPos.map((s,i)=>(
-          <div key={i} style={{textAlign:"center",padding:"10px 6px",borderRadius:4,background:C.bgInput,border:`1px solid ${C.border}`}}>
-            <div style={{fontFamily:fontD,fontSize:16,color:C.gold}}>—</div>
-            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{s}</div>
-          </div>
-        ))}
+
+    {/* ── MÉTRICAS-CHAVE POR POSIÇÃO ── */}
+    <Card style={{marginBottom:14}}>
+      <SH title={`Métricas-Chave — ${a.pos}`}/>
+      <div style={{display:"grid",gridTemplateColumns:`repeat(${Math.min(posKeys.length,5)},1fr)`,gap:8}}>
+        {posKeys.map(({k,label},i)=>{
+          const v = posValues[k];
+          const displayVal = k === "min" || k === "gols" || k === "assist" || k === "remates" ? v.total : v.avg;
+          const isDecimal = k === "xg";
+          return <div key={i} style={{textAlign:"center",padding:"10px 6px",borderRadius:4,background:C.bgInput,border:`1px solid ${C.border}`}}>
+            <div style={{fontFamily:fontD,fontSize:18,color:C.gold,fontWeight:700}}>{totalJogos > 0 ? (isDecimal ? displayVal.toFixed(2) : displayVal.toFixed(k==="min"?0:1)) : "—"}</div>
+            <div style={{fontFamily:font,fontSize:8,color:C.textDim,textTransform:"uppercase",marginTop:2}}>{label}{k!=="min"&&k!=="gols"&&k!=="assist"&&k!=="remates"?" /jogo":""}</div>
+          </div>;
+        })}
       </div>
-      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginTop:6,fontStyle:"italic"}}>Dados individuais alimentados via planilha (aba Individual).</div>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginTop:8,padding:"8px 10px",background:C.bgInput,borderRadius:4,lineHeight:1.5}}>
+        <strong style={{color:C.text}}>Referencial teórico:</strong> {posM.desc}
+      </div>
     </Card>
 
+    {/* ── AVALIAÇÃO LONGITUDINAL ── */}
+    {totalJogos >= 2 && <Card style={{marginBottom:14}}>
+      <SH title="Avaliação Longitudinal"/>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:10}}>Evolução das métricas ao longo dos {totalJogos} jogos disputados. Linha tracejada = média.</div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:12}}>
+        {posKeys.map(({k,label})=>{
+          const data = posValues[k].data;
+          const tc = trendColor(data);
+          return <div key={k} style={{padding:"10px 12px",borderRadius:6,background:C.bgInput,border:`1px solid ${C.border}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+              <span style={{fontFamily:font,fontSize:10,color:C.text,fontWeight:600,textTransform:"uppercase"}}>{label}</span>
+              <span style={{fontFamily:fontD,fontSize:10,color:tc,fontWeight:700}}>{trendLabel(data)}</span>
+            </div>
+            <Sparkline data={data} width={170} height={32} color={tc}/>
+            <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+              <span style={{fontFamily:font,fontSize:8,color:C.textDim}}>Jogo 1</span>
+              <span style={{fontFamily:font,fontSize:8,color:C.textDim}}>Jogo {data.length}</span>
+            </div>
+          </div>;
+        })}
+      </div>
+    </Card>}
+
+    {/* ── CORRELAÇÃO INDIVIDUAL × COLETIVO ── */}
+    {correlationData.length > 0 && <Card style={{marginBottom:14}}>
+      <SH title="Correlação Individual × Coletivo"/>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:10}}>Análise cruzada entre desempenho individual e métricas coletivas da equipe nos mesmos jogos.</div>
+
+      {corrInsights.length > 0 && <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:8,marginBottom:12}}>
+        {corrInsights.map((ci,i)=>(
+          <div key={i} style={{padding:"10px 12px",borderRadius:6,background:C.bgInput,border:`1px solid ${ci.pos?C.green:C.red}33`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontFamily:font,fontSize:10,color:C.text,fontWeight:600}}>{ci.label}</span>
+              <span style={{fontFamily:fontD,fontSize:14,color:ci.pos?C.green:C.red,fontWeight:700}}>{ci.valor}</span>
+            </div>
+            <div style={{fontFamily:font,fontSize:9,color:C.textDim,marginTop:4}}>{ci.desc}</div>
+          </div>
+        ))}
+      </div>}
+
+      {/* Performance per match table */}
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"collapse",fontFamily:font,fontSize:10}}>
+          <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
+            {["Adversário","Res","Posse%","PPDA","Min","Ações","Duelos","Passes","Dribles","xG"].map(h=>(
+              <th key={h} style={{padding:"5px 8px",textAlign:"left",color:C.textDim,fontSize:8,textTransform:"uppercase",fontWeight:600}}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>{correlationData.map((c,i)=>(
+            <tr key={i} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+              <td style={{padding:"6px 8px",color:C.text}}>{c.col.adv}</td>
+              <td style={{padding:"6px 8px"}}><ResBadge r={c.col.res}/></td>
+              <td style={{padding:"6px 8px",color:C.text}}>{c.col.posse!=null?`${c.col.posse}%`:"—"}</td>
+              <td style={{padding:"6px 8px",color:C.textMid}}>{c.col.ppda!=null?c.col.ppda.toFixed(1):"—"}</td>
+              <td style={{padding:"6px 8px",color:C.text,fontWeight:600}}>{c.ind.min||"—"}</td>
+              <td style={{padding:"6px 8px",color:C.gold}}>{c.ind.acoes||"—"}</td>
+              <td style={{padding:"6px 8px",color:C.green}}>{c.ind.duelos||"—"}</td>
+              <td style={{padding:"6px 8px",color:C.text}}>{c.ind.passesCrt||"—"}</td>
+              <td style={{padding:"6px 8px",color:C.text}}>{c.ind.dribles||"—"}</td>
+              <td style={{padding:"6px 8px",color:C.green}}>{c.ind.xg!=null&&c.ind.xg>0?c.ind.xg.toFixed(2):"—"}</td>
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </Card>}
+
+    {/* ── PARTIDAS COLETIVAS ── */}
     <Card style={{marginBottom:14}}><SH title="Partidas Coletivas" count={partidas.length}/>
       {partidas.length>0 ? <table style={{width:"100%",borderCollapse:"collapse",fontFamily:font,fontSize:11}}>
         <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>{["R","Adversário","Res","Placar","xG","xGA","Posse%","PPDA"].map(h=><th key={h} style={{padding:"6px 10px",textAlign:"left",color:C.textDim,fontSize:9,textTransform:"uppercase",fontWeight:600}}>{h}</th>)}</tr></thead>
@@ -725,11 +977,9 @@ function AtletaDetailPage({id,onBack,videos=[],partidas=[]}) {
           </tr>
         ))}</tbody>
       </table> : <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Nenhuma partida carregada.</div>}
-      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginTop:8,padding:"6px 10px",background:C.bgInput,borderRadius:4}}>
-        Dados individuais por atleta alimentados via planilha Wyscout → API.
-      </div>
     </Card>
 
+    {/* ── VÍDEOS ── */}
     <Card><SH title="Vídeos" count={aVideos.length}/>
       {aVideos.length>0?aVideos.map(v=>{
         const vLink = v.link || v.linkAlt || "";
@@ -886,6 +1136,7 @@ export default function PantherPerformance() {
   const partidas = sheets.livePartidas || [];
   const calendario = sheets.liveCalendario || [];
   const videos = sheets.liveVideos || [];
+  const individual = sheets.liveIndividual || [];
 
   const proxAdv = calendario.length > 0 ? (() => {
     const pending = calendario.find(c => !c.adv_ok);
@@ -905,7 +1156,7 @@ export default function PantherPerformance() {
   const atrasadas=tarefas.filter(t=>t.status==="atrasada").length;
 
   const renderPage=()=>{
-    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas}/>;
+    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
     switch(page){
       case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;
