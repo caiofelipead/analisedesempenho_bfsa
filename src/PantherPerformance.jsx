@@ -191,7 +191,7 @@ function mapVideos(rows) {
       : tipoRaw.includes("treino") ? "treino"
       : tipoRaw.includes("col") ? "coletivo"
       : tipoRaw.includes("ind") ? "clip_individual"
-      : tipoRaw.includes("material") || tipoRaw.includes("orientador") ? "prelecao"
+      : tipoRaw.includes("material") || tipoRaw.includes("orientador") ? "material_orientador"
       : tipoRaw || "clip_individual";
     const dataStr = findCol(r,"Data","data") || "";
     let titulo = desc || [comp, rodada].filter(Boolean).join(" - ") || `Vídeo ${i + 1}`;
@@ -785,13 +785,17 @@ function PrelecaoPage({videos=[],proxAdv}) {
 // ═══════════════════════════════════════════════
 function PartidasPage({videos=[],partidas=[],calendario=[]}) {
   const escudoMap=Object.fromEntries([...partidas,...calendario].filter(x=>x.escudo).map(x=>[x.adv,x.escudo]));
-  const sorted=[...partidas].sort((a,b)=>(a.data||"").localeCompare(b.data||""));
+  const sorted=[...partidas].sort((a,b)=>{
+    const da=parseDateBR(a.data), db=parseDateBR(b.data);
+    if(da&&db) return da-db;
+    return (a.data||"").localeCompare(b.data||"");
+  });
   const posVideos = (adv) => videos.filter(v=>v.partida===adv||v.tipo==="jogo_completo"&&(v.titulo||"").toLowerCase().includes(adv.toLowerCase()));
   return <div>
     <SH title="Partidas + Pós-Jogo" count={partidas.length}/>
     {partidas.length===0&&<Card><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Nenhuma partida carregada. Sincronize com Google Sheets.</div></Card>}
-    {sorted.map((p,idx)=>{
-      const rodNum = idx + 1;
+    {sorted.map((p)=>{
+      const rodNum = p.rod || "";
       const matchVideos = posVideos(p.adv);
       const firstVideo = matchVideos.find(v=>v.link||v.linkAlt);
       const videoLink = firstVideo ? (firstVideo.link||firstVideo.linkAlt) : null;
@@ -956,7 +960,10 @@ const PROGRAMACAO_SEMANAL = {
 
 function TreinosPage({videos=[],partidas=[],calendario=[]}) {
   const treinos = videos.filter(v => v.tipo === "treino" && v.data);
-  const jogos = [...partidas, ...calendario];
+  // Deduplicate: if a jogo exists in both partidas and calendario (same date+adv), keep only partidas version
+  const partidaKeys = new Set(partidas.map(p => `${normDateKey(p.data)}_${(p.adv||"").toLowerCase()}`));
+  const dedupCalendario = calendario.filter(c => !partidaKeys.has(`${normDateKey(c.data)}_${(c.adv||"").toLowerCase()}`));
+  const jogos = [...partidas, ...dedupCalendario];
 
   // Weekly tasks stored in localStorage
   const [weekTasks, setWeekTasks] = useState(() => {
@@ -1013,15 +1020,16 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
 
   const weekMap = {};
   const weekOrder = [];
+  const localISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   const addWeek = (d) => {
     const ws = getWeekStart(d);
-    const wk = ws.toISOString().slice(0,10);
+    const wk = localISO(ws);
     if (!weekMap[wk]) { weekMap[wk] = ws; weekOrder.push(wk); }
   };
   addWeek(new Date());
   allDates.forEach(ds => { const d = parseDateBR(ds); if (d) addWeek(d); });
   // Sort: current week first, then future weeks ascending, then past weeks descending
-  const currentWk = getWeekStart(new Date()).toISOString().slice(0,10);
+  const currentWk = localISO(getWeekStart(new Date()));
   weekOrder.sort((a, b) => {
     const aFuture = a >= currentWk;
     const bFuture = b >= currentWk;
@@ -1043,7 +1051,7 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
       for (let i = 0; i < 7; i++) {
         const dayDate = new Date(wsDate); dayDate.setDate(dayDate.getDate() + i);
         const dayStr = fmtDateKey(dayDate);
-        const isoStr = dayDate.toISOString().slice(0,10);
+        const isoStr = `${dayDate.getFullYear()}-${String(dayDate.getMonth()+1).padStart(2,"0")}-${String(dayDate.getDate()).padStart(2,"0")}`;
         weekDays.push({
           label: diasSemana[i], date: dayDate, dateStr: dayStr,
           treinos: treinosByDate[dayStr] || [],
@@ -1053,7 +1061,7 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
         });
       }
 
-      const hasContent = weekDays.some(d => d.treinos.length > 0 || d.jogos.length > 0 || d.tasks.length > 0 || d.programacao) || wk === getWeekStart(new Date()).toISOString().slice(0,10);
+      const hasContent = weekDays.some(d => d.treinos.length > 0 || d.jogos.length > 0 || d.tasks.length > 0 || d.programacao) || wk === currentWk;
       if (!hasContent) return null;
 
       const hasProgramacao = weekDays.some(d => d.programacao);
