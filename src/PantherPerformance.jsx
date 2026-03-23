@@ -118,24 +118,59 @@ function getField(r, ...keys) { for(const k of keys) { if(r[k]) return r[k]; } r
 function getAdv(r) { return getField(r, "Adversário", "Adversario", "adversário", "adversario"); }
 function getComp(r) { return getField(r, "Comp", "comp", "Competição", "competição", "Competicao"); }
 function mapColetivo(rows) {
-  return rows.filter(r => getComp(r) && getAdv(r)).map((r, i) => ({
-    id: i + 1, data: r.Data || "", adv: getAdv(r), comp: getComp(r), res: (r.Res||"").toUpperCase().trim(),
-    pl: r.Placar || "", mand: r.Local === "C", form: r.Sistema || "",
-    rod: parseInt((r.Rodada || "").replace(/[^\d]/g, ""), 10) || i + 1,
-    escudo: r.escudo || r.Escudo || "",
-    posJogoDone: true, videosDone: true, adversarioDone: true,
-    xg: ptNum(r.xG), xgC: ptNum(r.xGA), posse: ptNum(r["Posse%"]),
-    passes: ptNum(r.Passes), passCrt: ptNum(r["Pass Crt"]), passPct: ptNum(r["Pass%"]),
-    remates: ptNum(r.Remates), remAlvo: ptNum(r["Rem Alvo"]), remPct: ptNum(r["Rem%"]),
-    cruz: ptNum(r.Cruzamentos), cruzCrt: ptNum(r["Cruz Crt"]), cruzPct: ptNum(r["Cruz%"]),
-    duelos: ptNum(r.Duelos) || ptNum(r["Duelos Ganhos"]), duelPct: ptNum(r["Duelos%"]),
-    recup: ptNum(r.Recup), perdas: ptNum(r.Perdas), ppda: ptNum(r.PPDA),
-    intercep: ptNum(r.Intercep), ataqPos: ptNum(r["Ataq Pos"]), contraAtaq: ptNum(r["Contra-Ataq"]),
-    bpRem: ptNum(r["BP Rem"]), toquesArea: ptNum(r["Toques Área"]),
-    intensidade: ptNum(r.Intensidade), faltas: ptNum(r.Faltas),
-    cartAm: ptNum(r["Cart Am"]), cartVm: ptNum(r["Cart Vm"]),
-    gm: ptNum(r.GM), gs: ptNum(r.GS),
-  }));
+  if (rows.length > 0) console.log("[BFSA mapColetivo] headers:", Object.keys(rows[0]), "sample:", JSON.stringify(rows[0]).slice(0, 600));
+  return rows.filter(r => getComp(r) && getAdv(r)).map((r, i) => {
+    const placar = findCol(r,"Placar","placar","Score") || "";
+    const local = findCol(r,"Local","local","Mando") || "";
+    const isHome = local === "C" || local === "Casa" || local === "M";
+    // Parse GM/GS from placar (format "X:Y" or "XxY") when dedicated columns missing
+    const placarParts = placar.split(/[x:]/i).map(s => parseInt(s.trim(), 10));
+    let gmRaw = ptNum(findCol(r,"GM","Gols Marcados","Gols Pro","Goals For","gm"));
+    let gsRaw = ptNum(findCol(r,"GS","Gols Sofridos","Gols Contra","Goals Against","gs"));
+    if (gmRaw == null && placarParts.length === 2 && !isNaN(placarParts[0]) && !isNaN(placarParts[1])) {
+      gmRaw = isHome ? placarParts[0] : placarParts[1];
+      gsRaw = isHome ? placarParts[1] : placarParts[0];
+    }
+    return {
+      id: i + 1,
+      data: findCol(r,"Data","data","Date") || "",
+      adv: getAdv(r), comp: getComp(r),
+      res: (findCol(r,"Res","res","Resultado","Result") || "").toUpperCase().trim(),
+      pl: placar, mand: isHome,
+      form: findCol(r,"Sistema","sistema","Formação","Formacao","Formation") || "",
+      rod: parseInt((findCol(r,"Rodada","rodada","Round") || "").replace(/[^\d]/g, ""), 10) || i + 1,
+      escudo: findCol(r,"escudo","Escudo") || "",
+      posJogoDone: true, videosDone: true, adversarioDone: true,
+      xg: ptNum(findCol(r,"xG","Expected Goals")),
+      xgC: ptNum(findCol(r,"xGA","xG Against","xGC","xG Contra")),
+      posse: ptNum(findCol(r,"Posse%","Posse","Posse de Bola","Possession","Posse %")),
+      passes: ptNum(findCol(r,"Passes","passes","Total Passes")),
+      passCrt: ptNum(findCol(r,"Pass Crt","Passes Certos","Passes Crt","Accurate Passes","Passes certos")),
+      passPct: ptNum(findCol(r,"Pass%","Passes%","Pass Pct","Passes %")),
+      remates: ptNum(findCol(r,"Remates","remates","Shots","Finalizações","Finalizacoes","Chutes")),
+      remAlvo: ptNum(findCol(r,"Rem Alvo","Remates Alvo","Shots on Target","Rem alvo","Chutes Alvo")),
+      remPct: ptNum(findCol(r,"Rem%","Remates%","Shot%","Rem %")),
+      cruz: ptNum(findCol(r,"Cruzamentos","cruzamentos","Crosses","Cruz")),
+      cruzCrt: ptNum(findCol(r,"Cruz Crt","Cruzamentos Crt","Cruzamentos Certos","Accurate Crosses","Cruz crt")),
+      cruzPct: ptNum(findCol(r,"Cruz%","Cruzamentos%","Cross%","Cruz %")),
+      duelos: ptNum(findCol(r,"Duelos","duelos","Duels","Duelos Ganhos","Duels Won")),
+      duelPct: ptNum(findCol(r,"Duelos%","Duels%","Duel%","Duelos %")),
+      recup: ptNum(findCol(r,"Recup","Recuperações","Recuperacoes","Recoveries")),
+      perdas: ptNum(findCol(r,"Perdas","perdas","Losses","Turnovers")),
+      ppda: ptNum(findCol(r,"PPDA","ppda")),
+      intercep: ptNum(findCol(r,"Intercep","Interceptações","Interceptacoes","Interceptions")),
+      ataqPos: ptNum(findCol(r,"Ataq Pos","Ataques Posicionais","Positional Attacks","Ataq pos")),
+      contraAtaq: ptNum(findCol(r,"Contra-Ataq","Contra Ataq","Counter Attacks","Contra-ataq","ContraAtaq")),
+      bpRem: ptNum(findCol(r,"BP Rem","Bolas Paradas Rem","BP Remates","Set Piece Shots","BP rem")),
+      toquesArea: ptNum(findCol(r,"Toques Área","Toques Area","Touches in Box","Toques area")),
+      intensidade: ptNum(findCol(r,"Intensidade","intensidade","Intensity")),
+      faltas: ptNum(findCol(r,"Faltas","faltas","Fouls","Faltas Cometidas")),
+      cartAm: ptNum(findCol(r,"Cart Am","Cartões Amarelos","Cartoes Amarelos","Yellow Cards","Cart am")),
+      cartVm: ptNum(findCol(r,"Cart Vm","Cartões Vermelhos","Cartoes Vermelhos","Red Cards","Cart vm")),
+      gm: gmRaw,
+      gs: gsRaw,
+    };
+  });
 }
 
 function mapIndividual(rows) {
