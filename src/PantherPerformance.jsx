@@ -158,7 +158,7 @@ function mapColetivo(rows) {
       passCrt: ptNum(findCol(r,"Pass Crt","Passes Certos","Passes Crt","Accurate Passes","Passes certos")),
       passPct: ptNum(findCol(r,"Pass%","Passes%","Pass Pct","Passes %")),
       remates: ptNum(findCol(r,"Remates","remates","Shots","Finalizações","Finalizacoes","Chutes")),
-      remAlvo: ptNum(findCol(r,"Rem Alvo","Remates Alvo","Shots on Target","Rem alvo","Chutes Alvo")),
+      remAlvo: ptNum(findCol(r,"Rem Alvo","Remates Alvo","Remates / a baliza","Remates / à baliza","Remates à baliza","Remates a baliza","Shots on Target","Rem alvo","Chutes Alvo")),
       remPct: ptNum(findCol(r,"Rem%","Remates%","Shot%","Rem %")),
       cruz: ptNum(findCol(r,"Cruzamentos","cruzamentos","Crosses","Cruz")),
       cruzCrt: ptNum(findCol(r,"Cruz Crt","Cruzamentos Crt","Cruzamentos Certos","Accurate Crosses","Cruz crt")),
@@ -199,6 +199,7 @@ function mapIndividual(rows) {
     gols: ptNum(findCol(r, "Golos", "Gols", "Goals", "G", "Gol")),
     assist: ptNum(findCol(r, "Assistências", "Assistencias", "Assists", "A", "Assist")),
     remates: ptNum(findCol(r, "Remates/i", "Remates", "Shots", "Finalizações", "Finalizacoes", "Chutes")),
+    remAlvo: ptNum(findCol(r, "Remates / a baliza", "Remates / à baliza", "Remates/a baliza", "Remates à baliza", "Remates a baliza", "Rem Alvo", "Shots on target")),
     xg: ptNum(findCol(r, "xG", "Expected goals")),
     passesCrt: ptNum(findCol(r, "Passes/cer", "Passes Certos", "Accurate passes", "Passes certos", "Passes precisos", "Passes bem sucedidos", "Passes/certos", "Passes cer")),
     passesLong: ptNum(findCol(r, "Passes long", "Passes Longos", "Long passes", "Passes longos", "Passes longos/precisos", "Long passes accurate")),
@@ -1394,6 +1395,8 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
   };
   addWeek(new Date());
   allDates.forEach(ds => { const d = parseDateBR(ds); if (d) addWeek(d); });
+  // Also add weeks from PROGRAMACAO_SEMANAL so training-only weeks appear
+  Object.keys(PROGRAMACAO_SEMANAL).forEach(isoStr => { addWeek(new Date(isoStr + "T12:00:00")); });
   // Sort: current week first, then future weeks ascending, then past weeks descending
   const currentWk = localISO(getWeekStart(new Date()));
   weekOrder.sort((a, b) => {
