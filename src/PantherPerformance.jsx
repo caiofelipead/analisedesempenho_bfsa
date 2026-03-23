@@ -868,6 +868,92 @@ const PRAZO_LABELS = [
   {key:"ind",label:"IND",tip:"Individual"},
 ];
 
+// ── Quadro de Trabalho Semanal (Programação de Treinos) ──
+const PROGRAMACAO_SEMANAL = {
+  "2026-03-23": {
+    manha: { tipo: "descanso" },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-03-24": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-03-25": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Confraternização no CT",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-03-26": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala anexa)",
+    },
+  },
+  "2026-03-27": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala anexa)",
+    },
+  },
+  "2026-03-28": {
+    manha: {
+      tipo: "treino",
+      local: "CT Botafogo Academy",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-03-29": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+};
+
 function TreinosPage({videos=[],partidas=[],calendario=[]}) {
   const treinos = videos.filter(v => v.tipo === "treino" && v.data);
   const jogos = [...partidas, ...calendario];
@@ -957,28 +1043,37 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
       for (let i = 0; i < 7; i++) {
         const dayDate = new Date(wsDate); dayDate.setDate(dayDate.getDate() + i);
         const dayStr = fmtDateKey(dayDate);
+        const isoStr = dayDate.toISOString().slice(0,10);
         weekDays.push({
           label: diasSemana[i], date: dayDate, dateStr: dayStr,
           treinos: treinosByDate[dayStr] || [],
           jogos: jogosByDate[dayStr] || [],
           tasks: weekTasks[dayStr] || [],
+          programacao: PROGRAMACAO_SEMANAL[isoStr] || null,
         });
       }
 
-      const hasContent = weekDays.some(d => d.treinos.length > 0 || d.jogos.length > 0 || d.tasks.length > 0) || wk === getWeekStart(new Date()).toISOString().slice(0,10);
+      const hasContent = weekDays.some(d => d.treinos.length > 0 || d.jogos.length > 0 || d.tasks.length > 0 || d.programacao) || wk === getWeekStart(new Date()).toISOString().slice(0,10);
       if (!hasContent) return null;
 
+      const hasProgramacao = weekDays.some(d => d.programacao);
+
       return <Card key={wk}>
-        <div style={{fontFamily:fontD,fontSize:13,color:C.gold,fontWeight:700,marginBottom:12,letterSpacing:"0.05em"}}>
+        <div style={{fontFamily:fontD,fontSize:13,color:C.gold,fontWeight:700,marginBottom:hasProgramacao?4:12,letterSpacing:"0.05em"}}>
           SEMANA {fmtD(wsDate)} — {fmtD(weDate)}
         </div>
+        {hasProgramacao && <div style={{marginBottom:10}}>
+          <div style={{fontFamily:fontD,fontSize:10,color:C.text,fontWeight:700,letterSpacing:"0.05em",marginBottom:2}}>QUADRO DE TRABALHO SEMANAL</div>
+          <div style={{fontFamily:font,fontSize:8,color:C.red,fontWeight:600}}>Atletas que necessitarem de atendimento do DM: chegar 30 minutos antes</div>
+        </div>}
         <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:6}}>
           {weekDays.map((wd, i) => {
             const isToday = new Date().toDateString() === wd.date.toDateString();
             const hasJogo = wd.jogos.length > 0;
             const hasTreino = wd.treinos.length > 0;
-            const bgColor = isToday ? `${C.gold}12` : hasJogo ? `${C.red}08` : hasTreino ? `${C.green}08` : C.bg;
-            const borderColor = isToday ? C.gold+"55" : hasJogo ? C.red+"33" : hasTreino ? C.green+"33" : C.border;
+            const hasProg = wd.programacao && (wd.programacao.manha?.tipo === "treino" || wd.programacao.tarde?.tipo === "treino");
+            const bgColor = isToday ? `${C.gold}12` : hasJogo ? `${C.red}08` : (hasTreino||hasProg) ? `${C.green}08` : C.bg;
+            const borderColor = isToday ? C.gold+"55" : hasJogo ? C.red+"33" : (hasTreino||hasProg) ? C.green+"33" : C.border;
 
             return <div key={i} style={{
               background: bgColor, border: `1px solid ${borderColor}`,
@@ -1060,6 +1155,33 @@ function TreinosPage({videos=[],partidas=[],calendario=[]}) {
                       <span style={{fontFamily:font,fontSize:7,color:C.green,fontWeight:600}}>LINK</span>
                     </div>}
                   </div>;
+                })}
+
+                {/* Programação Semanal */}
+                {wd.programacao && [
+                  {periodo:"MANHÃ",data:wd.programacao.manha},
+                  {periodo:"TARDE",data:wd.programacao.tarde}
+                ].map(({periodo,data}) => {
+                  if (!data) return null;
+                  if (data.tipo === "descanso") return (
+                    <div key={periodo} style={{background:`${C.textDim}10`,borderRadius:5,padding:"4px 6px",border:`1px solid ${C.border}`}}>
+                      <div style={{fontFamily:fontD,fontSize:7,color:C.textDim,fontWeight:700,letterSpacing:"0.08em",marginBottom:1}}>{periodo}</div>
+                      <div style={{fontFamily:font,fontSize:8,color:C.textDim,fontStyle:"italic"}}>Descanso Programado</div>
+                    </div>
+                  );
+                  return (
+                    <div key={periodo} style={{background:`${C.green}12`,borderRadius:5,padding:"5px 6px",border:`1px solid ${C.green}28`}}>
+                      <div style={{fontFamily:fontD,fontSize:7,color:C.green,fontWeight:700,letterSpacing:"0.08em",marginBottom:2}}>{periodo}</div>
+                      {data.local && <div style={{fontFamily:font,fontSize:7,color:C.gold,fontWeight:600,marginBottom:3}}>{data.local}</div>}
+                      {data.atividades && data.atividades.map((a,ai) => (
+                        <div key={ai} style={{display:"flex",gap:4,alignItems:"baseline",marginBottom:1}}>
+                          <span style={{fontFamily:fontD,fontSize:7,color:C.green,fontWeight:700,flexShrink:0}}>{a.hora}</span>
+                          <span style={{fontFamily:font,fontSize:8,color:C.text,lineHeight:1.2}}>{a.desc}</span>
+                        </div>
+                      ))}
+                      {data.apos && <div style={{fontFamily:font,fontSize:7,color:C.textDim,marginTop:2,fontStyle:"italic"}}>Após: {data.apos}</div>}
+                    </div>
+                  );
                 })}
 
                 {/* Tasks */}
