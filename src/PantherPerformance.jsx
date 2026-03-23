@@ -155,7 +155,10 @@ function getField(r, ...keys) { for(const k of keys) { if(r[k]) return r[k]; } r
 function getAdv(r) { return getField(r, "Adversário", "Adversario", "adversário", "adversario"); }
 function getComp(r) { return getField(r, "Comp", "comp", "Competição", "competição", "Competicao"); }
 function mapColetivo(rows) {
-  if (rows.length > 0) console.log("[BFSA mapColetivo] headers:", Object.keys(rows[0]), "sample:", JSON.stringify(rows[0]).slice(0, 600));
+  if (rows.length > 0) {
+    console.log("[BFSA mapColetivo] headers:", Object.keys(rows[0]));
+    console.log("[BFSA mapColetivo] sample row:", JSON.stringify(rows[0]).slice(0, 1200));
+  }
   return rows.filter(r => getComp(r) && getAdv(r)).map((r, i) => {
     const placar = findCol(r,"Placar","placar","Score") || "";
     const local = findCol(r,"Local","local","Mando") || "";
@@ -198,7 +201,8 @@ function mapColetivo(rows) {
       intercep: ptNum(findCol(r,"Intercep","Interceptações","Interceptacoes","Interceptions")),
       ataqPos: ptNum(findCol(r,"Ataq Pos","Ataques Posicionais","Positional Attacks","Ataq pos")),
       contraAtaq: ptNum(findCol(r,"Contra-Ataq","Contra Ataq","Counter Attacks","Contra-ataq","ContraAtaq")),
-      bpRem: ptNum(findCol(r,"BP Rem","Bolas Paradas Rem","BP Remates","Set Piece Shots","BP rem")),
+      bp: ptNum(findCol(r,"Bolas Paradas","bolas paradas","Set Pieces")),
+      bpRem: ptNum(findCol(r,"BP Rem","BP Remates","BP rem")),
       toquesArea: ptNum(findCol(r,"Toques Área","Toques Area","Touches in Box","Toques area")),
       intensidade: ptNum(findCol(r,"Intensidade","intensidade","Intensity")),
       faltas: ptNum(findCol(r,"Faltas","faltas","Fouls","Faltas Cometidas")),
@@ -926,11 +930,11 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
   const totalJogos = partidas.length;
   const totalGM = partidas.reduce((s,p) => s + (p.gm||0), 0);
   const totalGS = partidas.reduce((s,p) => s + (p.gs||0), 0);
-  const totalBPRem = partidas.reduce((s,p) => s + (p.bpRem||0), 0);
+  const totalBP = partidas.reduce((s,p) => s + (p.bp||p.bpRem||0), 0);
   const totalFaltas = partidas.reduce((s,p) => s + (p.faltas||0), 0);
   const totalCruz = partidas.reduce((s,p) => s + (p.cruz||0), 0);
   const totalCruzCrt = partidas.reduce((s,p) => s + (p.cruzCrt||0), 0);
-  const avgBPRem = totalJogos > 0 ? (totalBPRem/totalJogos).toFixed(1) : "0";
+  const avgBP = totalJogos > 0 ? (totalBP/totalJogos).toFixed(1) : "0";
   const avgFaltas = totalJogos > 0 ? (totalFaltas/totalJogos).toFixed(1) : "0";
   const avgCruz = totalJogos > 0 ? (totalCruz/totalJogos).toFixed(1) : "0";
   const cruzPct = totalCruz > 0 ? ((totalCruzCrt/totalCruz)*100).toFixed(0) : "0";
@@ -954,7 +958,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
   // Per-match BP data for chart
   const bpChartData = partidas.map(p => ({
     adv: (p.adv||"").slice(0,10),
-    bpRem: p.bpRem||0,
+    bp: p.bp||p.bpRem||0,
     faltas: p.faltas||0,
     cruz: p.cruz||0,
   }));
@@ -1003,7 +1007,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
     {activeTab === "resumo" && <>
       {/* KPI Cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
-        <StatBox label="Remates em BP (total)" value={totalBPRem} sub={`Média ${avgBPRem}/jogo`} icon={<Target size={18} color={C.gold}/>} color={C.gold}/>
+        <StatBox label="Bolas Paradas (total)" value={totalBP} sub={`Média ${avgBP}/jogo`} icon={<Target size={18} color={C.gold}/>} color={C.gold}/>
         <StatBox label="Cruzamentos" value={totalCruz} sub={`${cruzPct}% precisão · ${avgCruz}/jogo`} icon={<Flag size={18} color={C.blue}/>} color={C.blue}/>
         <StatBox label="Faltas Sofridas/Cometidas" value={totalFaltas} sub={`Média ${avgFaltas}/jogo`} icon={<AlertTriangle size={18} color={C.yellow}/>} color={C.yellow}/>
         <StatBox label="Vídeos de BP" value={bpVideos.length} sub={`${Object.keys(bpByAdv).length} adversários`} icon={<Video size={18} color={C.purple}/>} color={C.purple}/>
@@ -1018,7 +1022,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
             <XAxis dataKey="adv" tick={{fontSize:8,fill:C.textDim,fontFamily:font}} interval={0} angle={-30} textAnchor="end" height={50}/>
             <YAxis tick={{fontSize:9,fill:C.textDim}} width={30}/>
             <Tooltip contentStyle={{background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:6,fontFamily:font,fontSize:11}} labelStyle={{color:C.text,fontWeight:700}}/>
-            <Bar dataKey="bpRem" name="Rem. BP" fill={C.gold} radius={[3,3,0,0]} barSize={14}/>
+            <Bar dataKey="bp" name="Bolas Paradas" fill={C.gold} radius={[3,3,0,0]} barSize={14}/>
             <Bar dataKey="cruz" name="Cruzamentos" fill={C.blue} radius={[3,3,0,0]} barSize={14}/>
             <Bar dataKey="faltas" name="Faltas" fill={C.yellow} radius={[3,3,0,0]} barSize={14}/>
           </BarChart>
@@ -1070,7 +1074,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
           <table style={{width:"100%",borderCollapse:"collapse",fontFamily:font,fontSize:10}}>
             <thead>
               <tr style={{borderBottom:`2px solid ${C.border}`}}>
-                {["","Adversário","Data","Placar","BP Rem","Cruzamentos","Cruz%","Faltas","GM","GS"].map((h,i) => (
+                {["","Adversário","Data","Placar","BP","Cruzamentos","Cruz%","Faltas","GM","GS"].map((h,i) => (
                   <th key={i} style={{padding:"6px 8px",textAlign:i<4?"left":"center",fontFamily:fontD,fontSize:9,color:C.textDim,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase"}}>{h}</th>
                 ))}
               </tr>
@@ -1082,7 +1086,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
                   <td style={{padding:"5px 8px",color:C.text,fontWeight:600}}>{p.adv}</td>
                   <td style={{padding:"5px 8px",color:C.textDim}}>{p.data}</td>
                   <td style={{padding:"5px 8px"}}><ResBadge r={p.res}/> <span style={{color:C.text,fontWeight:700,marginLeft:4}}>{p.pl}</span></td>
-                  <td style={{padding:"5px 8px",textAlign:"center",color:C.gold,fontWeight:700}}>{p.bpRem ?? "-"}</td>
+                  <td style={{padding:"5px 8px",textAlign:"center",color:C.gold,fontWeight:700}}>{p.bp ?? p.bpRem ?? "-"}</td>
                   <td style={{padding:"5px 8px",textAlign:"center",color:C.blue,fontWeight:600}}>{p.cruz ?? "-"}{p.cruzCrt!=null ? ` (${p.cruzCrt})` : ""}</td>
                   <td style={{padding:"5px 8px",textAlign:"center",color:C.textMid}}>{p.cruzPct!=null ? `${p.cruzPct}%` : "-"}</td>
                   <td style={{padding:"5px 8px",textAlign:"center",color:C.yellow,fontWeight:600}}>{p.faltas ?? "-"}</td>
