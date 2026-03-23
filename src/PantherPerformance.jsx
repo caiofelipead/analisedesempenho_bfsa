@@ -64,8 +64,35 @@ function parseCSV(text) {
       if (nonEmpty >= 3) { headerIdx = i; break; }
     }
   }
-  const headers = splitLine(lines[headerIdx]).map(h => h.replace(/^"|"$/g, ""));
-  console.log("[BFSA parseCSV]", { sep, headerIdx, headers, lineCount: lines.length });
+  const rawHeaders = splitLine(lines[headerIdx]).map(h => h.replace(/^"|"$/g, "").trim());
+  // Fix merged headers: "Remates / à baliza" spans 2 cols (next is empty), split by " / " or "/ "
+  const headers = [...rawHeaders];
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    if (!h) continue;
+    // Check for slash-separated merged headers like "Remates / à baliza", "Passes / certos"
+    const parts = h.split(/\s*\/\s*/);
+    if (parts.length > 1) {
+      // Count how many consecutive empty headers follow
+      let emptyCount = 0;
+      for (let j = i + 1; j < headers.length && !headers[j]; j++) emptyCount++;
+      if (emptyCount >= parts.length - 1) {
+        // Split: first part stays as-is, subsequent parts get prefixed to avoid duplicates
+        // e.g. "Passes / certos" → "Passes", "Passes certos"
+        // e.g. "curto/ médio / longo" → "curto", "médio", "longo" (but these get context from previous non-empty header)
+        const prefix = parts[0];
+        headers[i] = prefix;
+        for (let p = 1; p < parts.length; p++) {
+          headers[i + p] = `${prefix} ${parts[p]}`;
+        }
+      }
+    }
+  }
+  // Ensure no empty headers — give them unique placeholder names
+  for (let i = 0; i < headers.length; i++) {
+    if (!headers[i]) headers[i] = `_col${i}`;
+  }
+  console.log("[BFSA parseCSV]", { sep, headerIdx, rawHeaders, headers, lineCount: lines.length });
   return lines.slice(headerIdx + 1).map(line => {
     const vals = splitLine(line);
     const obj = {};
@@ -135,11 +162,11 @@ function mapColetivo(rows) {
     const isHome = local === "C" || local === "Casa" || local === "M";
     // Parse GM/GS from placar (format "X:Y" or "XxY") when dedicated columns missing
     const placarParts = placar.split(/[x:]/i).map(s => parseInt(s.trim(), 10));
-    let gmRaw = ptNum(findCol(r,"GM","Gols Marcados","Gols Pro","Goals For","gm"));
+    let gmRaw = ptNum(findCol(r,"GM","Golos","Gols Marcados","Gols Pro","Goals For","gm"));
     let gsRaw = ptNum(findCol(r,"GS","Gols Sofridos","Gols Contra","Goals Against","gs"));
-    if (gmRaw == null && placarParts.length === 2 && !isNaN(placarParts[0]) && !isNaN(placarParts[1])) {
-      gmRaw = isHome ? placarParts[0] : placarParts[1];
-      gsRaw = isHome ? placarParts[1] : placarParts[0];
+    if (placarParts.length === 2 && !isNaN(placarParts[0]) && !isNaN(placarParts[1])) {
+      if (gmRaw == null) gmRaw = isHome ? placarParts[0] : placarParts[1];
+      if (gsRaw == null) gsRaw = isHome ? placarParts[1] : placarParts[0];
     }
     return {
       id: i + 1,
@@ -151,14 +178,14 @@ function mapColetivo(rows) {
       rod: parseInt((findCol(r,"Rodada","rodada","Round") || "").replace(/[^\d]/g, ""), 10) || i + 1,
       escudo: findCol(r,"escudo","Escudo") || "",
       posJogoDone: true, videosDone: true, adversarioDone: true,
-      xg: ptNum(findCol(r,"xG","Expected Goals")),
+      xg: ptNum(findCol(r,"xG","Expected Goals","s esper","esperados")),
       xgC: ptNum(findCol(r,"xGA","xG Against","xGC","xG Contra")),
-      posse: ptNum(findCol(r,"Posse%","Posse","Posse de Bola","Possession","Posse %")),
+      posse: ptNum(findCol(r,"Posse, %","Posse%","Posse","Posse de Bola","Possession","Posse %")),
       passes: ptNum(findCol(r,"Passes","passes","Total Passes")),
-      passCrt: ptNum(findCol(r,"Pass Crt","Passes Certos","Passes Crt","Accurate Passes","Passes certos")),
+      passCrt: ptNum(findCol(r,"Passes certos","Pass Crt","Passes Certos","Passes Crt","Accurate Passes","certos")),
       passPct: ptNum(findCol(r,"Pass%","Passes%","Pass Pct","Passes %")),
       remates: ptNum(findCol(r,"Remates","remates","Shots","Finalizações","Finalizacoes","Chutes")),
-      remAlvo: ptNum(findCol(r,"Rem Alvo","Remates Alvo","Remates / a baliza","Remates / à baliza","Remates à baliza","Remates a baliza","Shots on Target","Rem alvo","Chutes Alvo")),
+      remAlvo: ptNum(findCol(r,"Remates à baliza","Remates a baliza","à baliza","a baliza","Rem Alvo","Remates Alvo","Shots on Target","Rem alvo","Chutes Alvo")),
       remPct: ptNum(findCol(r,"Rem%","Remates%","Shot%","Rem %")),
       cruz: ptNum(findCol(r,"Cruzamentos","cruzamentos","Crosses","Cruz")),
       cruzCrt: ptNum(findCol(r,"Cruz Crt","Cruzamentos Crt","Cruzamentos Certos","Accurate Crosses","Cruz crt")),
