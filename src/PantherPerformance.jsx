@@ -85,16 +85,26 @@ function colNorm(s) { return (s||"").toLowerCase().normalize("NFD").replace(/[\u
 function findCol(row, ...candidates) {
   // Try exact match first
   for (const c of candidates) { if (row[c] !== undefined && row[c] !== "") return row[c]; }
-  // Try normalized fuzzy match against all row keys
+  // Try normalized exact match against all row keys
   const keys = Object.keys(row);
   for (const c of candidates) {
     const cn = colNorm(c);
     if (!cn) continue;
     for (const k of keys) {
       const kn = colNorm(k);
-      if (kn === cn || kn.includes(cn) || cn.includes(kn)) {
+      if (kn === cn) {
         if (row[k] !== undefined && row[k] !== "") return row[k];
       }
+    }
+  }
+  // Only do substring matching for longer strings (>=5 chars) to avoid false positives
+  for (const c of candidates) {
+    const cn = colNorm(c);
+    if (!cn || cn.length < 5) continue;
+    for (const k of keys) {
+      const kn = colNorm(k);
+      if (kn.length < 5) continue;
+      if ((kn.includes(cn) || cn.includes(kn)) && row[k] !== undefined && row[k] !== "") return row[k];
     }
   }
   return undefined;
@@ -192,7 +202,8 @@ function mapIndividual(rows) {
     xg: ptNum(findCol(r, "xG", "Expected goals")),
     passesCrt: ptNum(findCol(r, "Passes/cer", "Passes Certos", "Accurate passes", "Passes certos", "Passes precisos", "Passes bem sucedidos", "Passes/certos", "Passes cer")),
     passesLong: ptNum(findCol(r, "Passes long", "Passes Longos", "Long passes", "Passes longos", "Passes longos/precisos", "Long passes accurate")),
-    cruz: ptNum(findCol(r, "Cruzamento", "Cruzamentos", "Crosses", "Cruz", "Cruzamentos certos")),
+    cruz: ptNum(findCol(r, "Cruzamentos/certos", "Cruzamento/crt", "Cruzamentos certos", "Accurate crosses", "Cruz crt", "Cruz/crt")),
+    cruzTotal: ptNum(findCol(r, "Cruzamento", "Cruzamentos", "Crosses", "Cruz")),
     dribles: ptNum(findCol(r, "Dribbles/com sucesso", "Dribles", "Dribbles", "Dribles com sucesso", "Dribles/com sucesso", "Successful dribbles")),
     duelos: ptNum(findCol(r, "Duelos/ganhos", "Duelos", "Duels", "Duelos ganhos", "Duels won")),
   }));
@@ -901,15 +912,16 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
   individual.forEach(r => {
     const name = r.atleta;
     if (!name) return;
-    if (!playerStats[name]) playerStats[name] = {nome:name,gols:0,assist:0,cruz:0,jogos:0};
+    if (!playerStats[name]) playerStats[name] = {nome:name,gols:0,assist:0,cruz:0,cruzTotal:0,jogos:0};
     playerStats[name].gols += (r.gols||0);
     playerStats[name].assist += (r.assist||0);
     playerStats[name].cruz += (r.cruz||0);
+    playerStats[name].cruzTotal += (r.cruzTotal||r.cruz||0);
     playerStats[name].jogos += 1;
   });
   const playerList = Object.values(playerStats);
   const topScorers = [...playerList].filter(p=>p.gols>0).sort((a,b)=>b.gols-a.gols).slice(0,8);
-  const topCrossers = [...playerList].filter(p=>p.cruz>0).sort((a,b)=>b.cruz-a.cruz).slice(0,8);
+  const topCrossers = [...playerList].filter(p=>p.cruzTotal>0).sort((a,b)=>b.cruzTotal-a.cruzTotal).slice(0,8);
 
   // Per-match BP data for chart
   const bpChartData = partidas.map(p => ({
@@ -1016,7 +1028,7 @@ function BolasParadasPage({videos=[],partidas=[],calendario=[],individual=[],pro
                 <div style={{fontFamily:font,fontSize:11,color:C.text,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.nome}</div>
                 <div style={{fontFamily:font,fontSize:8,color:C.textDim}}>{atleta?.pos||""}</div>
               </div>
-              <div style={{fontFamily:fontD,fontSize:16,fontWeight:700,color:C.blue}}>{p.cruz}</div>
+              <div style={{fontFamily:fontD,fontSize:16,fontWeight:700,color:C.blue}}>{p.cruzTotal}</div>
               <div style={{fontFamily:font,fontSize:7,color:C.textDim}}>cruz</div>
             </div>;
           })}
