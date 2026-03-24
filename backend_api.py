@@ -3,12 +3,17 @@ BFSA Performance Analysis — FastAPI Backend
 Botafogo de Ribeirão Preto | Departamento de Análise de Desempenho
 """
 import os
+import io
+import csv
+import json
+import logging
 from datetime import date, datetime
 from typing import Optional
 from decimal import Decimal
 
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import (
     create_engine, Column, Integer, String, Text, Date, DateTime,
@@ -1523,6 +1528,87 @@ async def importar_pdf_adversario(file: UploadFile = File(...), db: Session = De
         return importar_relatorio_adversario(schema, db)
     finally:
         os.unlink(tmp_path)
+
+
+# ─────────────────────────────────────────────
+# GOOGLE SHEETS PROXY (private spreadsheet access)
+# ─────────────────────────────────────────────
+_sheets_service = None
+GOOGLE_SPREADSHEET_ID = os.getenv("GOOGLE_SPREADSHEET_ID", "")
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "")
+GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "")
+
+logger = logging.getLogger("bfsa")
+
+
+def _get_sheets_service():
+    """Lazy-init Google Sheets API service using a service account."""
+    global _sheets_service
+    if _sheets_service is not None:
+        return _sheets_service
+    try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+    except ImportError:
+        raise HTTPException(
+            status_code=500,
+            detail="google-api-python-client and google-auth are not installed. "
+                   "Run: pip install google-api-python-client google-auth",
+        )
+    scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+    if GOOGLE_SERVICE_ACCOUNT_JSON:
+        info = json.loads(GOOGLE_SERVICE_ACCOUNT_JSON)
+        creds = service_account.Credentials.from_service_account_info(info, scopes=scopes)
+    elif GOOGLE_SERVICE_ACCOUNT_FILE:
+        creds = service_account.Credentials.from_service_account_file(
+            GOOGLE_SERVICE_ACCOUNT_FILE, scopes=scopes,
+        )
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail="GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE must be set.",
+        )
+    _sheets_service = build("sheets", "v4", credentials=creds)
+    return _sheets_service
+
+
+@app.get("/api/sheets/{gid}", response_class=PlainTextResponse)
+def get_sheet_csv(gid: int):
+    """Fetch a sheet by GID from the private spreadsheet and return as CSV."""
+    if not GOOGLE_SPREADSHEET_ID:
+        raise HTTPException(status_code=500, detail="GOOGLE_SPREADSHEET_ID is not configured.")
+    service = _get_sheets_service()
+    try:
+        # First, get spreadsheet metadata to resolve GID → sheet title
+        meta = service.spreadsheets().get(
+            spreadsheetId=GOOGLE_SPREADSHEET_ID,
+            fields="sheets.properties",
+        ).execute()
+        sheet_title = None
+        for s in meta.get("sheets", []):
+            props = s.get("properties", {})
+            if props.get("sheetId") == gid:
+                sheet_title = props.get("title")
+                break
+        if not sheet_title:
+            raise HTTPException(status_code=404, detail=f"Sheet with gid={gid} not found.")
+        # Fetch all data from the sheet
+        result = service.spreadsheets().values().get(
+            spreadsheetId=GOOGLE_SPREADSHEET_ID,
+            range=sheet_title,
+        ).execute()
+        rows = result.get("values", [])
+        # Convert to CSV
+        buf = io.StringIO()
+        writer = csv.writer(buf, delimiter=";")
+        for row in rows:
+            writer.writerow(row)
+        return PlainTextResponse(buf.getvalue(), media_type="text/csv; charset=utf-8")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error fetching Google Sheet gid=%s", gid)
+        raise HTTPException(status_code=502, detail=f"Google Sheets API error: {e}")
 
 
 # ─────────────────────────────────────────────

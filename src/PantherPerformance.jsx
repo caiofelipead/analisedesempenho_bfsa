@@ -23,6 +23,7 @@ import {
 // GOOGLE SHEETS CSV PARSER — Live data fetch
 // ═══════════════════════════════════════════════
 const SHEETS_CSV_BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThRhCTfsLmX3ftpF-0m2UwZeDNBWjn5TxnDCBB3i5W82bh1dNW8m-sbORNTX5FBA/pub?output=csv";
+const SHEETS_API_URL = process.env.REACT_APP_SHEETS_API_URL || ""; // e.g. "https://api.example.com"
 const GID = { cadastro:2058075615, coletivo:1880381548, individual:2098013514, videos:789793586, calendario:429987536 };
 
 function parseCSV(text) {
@@ -138,12 +139,27 @@ function findCol(row, ...candidates) {
 }
 
 async function fetchSheet(gid) {
+  // Try private API proxy first (backend with service account)
+  if (SHEETS_API_URL) {
+    try {
+      const res = await fetch(`${SHEETS_API_URL}/api/sheets/${gid}`);
+      if (res.ok) {
+        const text = await res.text();
+        const rows = parseCSV(text);
+        if (rows.length > 0) return rows;
+      }
+      console.warn(`[BFSA] Backend proxy failed for gid=${gid}, falling back to public URL`);
+    } catch (e) {
+      console.warn(`[BFSA] Backend proxy unreachable, falling back to public URL:`, e.message);
+    }
+  }
+  // Fallback: public CSV URL (requires spreadsheet to be published)
   const url = `${SHEETS_CSV_BASE}&gid=${gid}`;
   const res = await fetch(url, { redirect: "follow" });
   if (!res.ok) throw new Error(`Sheet ${gid}: ${res.status}`);
   const text = await res.text();
   if (text.trim().startsWith("<!") || text.trim().startsWith("<html")) {
-    console.warn(`[BFSA] Sheet ${gid} returned HTML instead of CSV. Check if the spreadsheet is published.`);
+    console.warn(`[BFSA] Sheet ${gid} returned HTML instead of CSV. Check if the spreadsheet is published or configure REACT_APP_SHEETS_API_URL.`);
     return [];
   }
   const rows = parseCSV(text);
