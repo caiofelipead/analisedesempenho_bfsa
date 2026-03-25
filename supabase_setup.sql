@@ -62,6 +62,8 @@ CREATE TABLE indicacoes (
   idade VARCHAR(10),
   clube_atual VARCHAR(100),
   link VARCHAR(500),
+  foto_url VARCHAR(500),
+  escudo_url VARCHAR(500),
   observacao TEXT,
   indicado_por VARCHAR(50),
   status VARCHAR(20) DEFAULT 'novo',
