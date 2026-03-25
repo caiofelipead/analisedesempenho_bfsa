@@ -2190,7 +2190,7 @@ function AnalistasPage({tarefas=[],addTarefa,updateTarefa,removeTarefa,showAddTa
 // ═══════════════════════════════════════════════
 // PAGE: INDICAÇÃO DE JOGADORES
 // ═══════════════════════════════════════════════
-const POSICOES = ["Goleiro","Lateral Direito","Lateral Esquerdo","Zagueiro","Volante","Meia","Atacante","Extremo Direito","Extremo Esquerdo","Centroavante"];
+const POSICOES = ["Goleiro","Lateral Direito","Lateral Esquerdo","Zagueiro","Volante","Meia","Atacante","Extremo","Centroavante"];
 const PRIO_COLORS = {alta:C.red,media:C.yellow,baixa:C.green};
 const STATUS_IND = {novo:"Novo",em_analise:"Em Análise",aprovado:"Aprovado",descartado:"Descartado"};
 const STATUS_IND_COLORS = {novo:C.blue,em_analise:C.yellow,aprovado:C.green,descartado:C.red};
