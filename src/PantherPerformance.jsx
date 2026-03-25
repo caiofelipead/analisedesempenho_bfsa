@@ -2190,21 +2190,21 @@ function AnalistasPage({tarefas=[],addTarefa,updateTarefa,removeTarefa,showAddTa
 // ═══════════════════════════════════════════════
 // PAGE: INDICAÇÃO DE JOGADORES
 // ═══════════════════════════════════════════════
-const POSICOES = ["Goleiro","Lateral Direito","Lateral Esquerdo","Zagueiro","Volante","Meia","Atacante","Ponta Direita","Ponta Esquerda","Centroavante"];
+const POSICOES = ["Goleiro","Lateral Direito","Lateral Esquerdo","Zagueiro","Volante","Meia","Atacante","Extremo Direito","Extremo Esquerdo","Centroavante"];
 const PRIO_COLORS = {alta:C.red,media:C.yellow,baixa:C.green};
 const STATUS_IND = {novo:"Novo",em_analise:"Em Análise",aprovado:"Aprovado",descartado:"Descartado"};
 const STATUS_IND_COLORS = {novo:C.blue,em_analise:C.yellow,aprovado:C.green,descartado:C.red};
 
 function IndicacoesPage({indicacoes=[],addIndicacao,updateIndicacao,removeIndicacao}) {
   const [showForm,setShowForm]=useState(false);
-  const [form,setForm]=useState({nome:"",posicao:"",idade:"",clube_atual:"",link:"",observacao:"",indicado_por:"",prioridade:"media"});
+  const [form,setForm]=useState({nome:"",posicao:"",idade:"",clube_atual:"",link:"",foto_url:"",escudo_url:"",observacao:"",indicado_por:"",prioridade:"media"});
   const [filtroStatus,setFiltroStatus]=useState("todos");
   const [filtroPosicao,setFiltroPosicao]=useState("todas");
 
   const handleAdd=()=>{
     if(!form.nome.trim())return;
     addIndicacao({...form,status:"novo"});
-    setForm({nome:"",posicao:"",idade:"",clube_atual:"",link:"",observacao:"",indicado_por:"",prioridade:"media"});
+    setForm({nome:"",posicao:"",idade:"",clube_atual:"",link:"",foto_url:"",escudo_url:"",observacao:"",indicado_por:"",prioridade:"media"});
     setShowForm(false);
   };
 
@@ -2276,6 +2276,14 @@ function IndicacoesPage({indicacoes=[],addIndicacao,updateIndicacao,removeIndica
           <input value={form.link} onChange={e=>setForm({...form,link:e.target.value})} placeholder="https://..." style={inputStyle}/>
         </div>
         <div>
+          <label style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:4,display:"block"}}>Foto do Atleta (URL)</label>
+          <input value={form.foto_url} onChange={e=>setForm({...form,foto_url:e.target.value})} placeholder="https://...foto.jpg" style={inputStyle}/>
+        </div>
+        <div>
+          <label style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:4,display:"block"}}>Escudo do Clube (URL)</label>
+          <input value={form.escudo_url} onChange={e=>setForm({...form,escudo_url:e.target.value})} placeholder="https://...escudo.png" style={inputStyle}/>
+        </div>
+        <div>
           <label style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:4,display:"block"}}>Indicado por</label>
           <input value={form.indicado_por} onChange={e=>setForm({...form,indicado_por:e.target.value})} placeholder="Nome do analista" style={inputStyle}/>
         </div>
@@ -2309,8 +2317,9 @@ function IndicacoesPage({indicacoes=[],addIndicacao,updateIndicacao,removeIndica
       filtered.map(ind=>(
         <Card key={ind.id} style={{marginBottom:8}}>
           <div style={{display:"flex",alignItems:"flex-start",gap:12}}>
-            <div style={{width:40,height:40,borderRadius:"50%",background:`${STATUS_IND_COLORS[ind.status]||C.blue}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`2px solid ${STATUS_IND_COLORS[ind.status]||C.blue}44`}}>
-              <UserPlus size={18} color={STATUS_IND_COLORS[ind.status]||C.blue}/>
+            <div style={{width:48,height:48,borderRadius:"50%",background:`${STATUS_IND_COLORS[ind.status]||C.blue}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,border:`2px solid ${STATUS_IND_COLORS[ind.status]||C.blue}44`,overflow:"hidden"}}>
+              {ind.foto_url?<img src={ind.foto_url} alt={ind.nome} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none";e.target.nextSibling.style.display="flex"}}/>:null}
+              <UserPlus size={18} color={STATUS_IND_COLORS[ind.status]||C.blue} style={ind.foto_url?{display:"none"}:{}}/>
             </div>
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
@@ -2320,7 +2329,10 @@ function IndicacoesPage({indicacoes=[],addIndicacao,updateIndicacao,removeIndica
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
                 {ind.posicao&&<span style={{fontFamily:font,fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:3}}><MapPin size={10}/>{ind.posicao}</span>}
-                {ind.clube_atual&&<span style={{fontFamily:font,fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:3}}><Shield size={10}/>{ind.clube_atual}</span>}
+                {ind.clube_atual&&<span style={{fontFamily:font,fontSize:11,color:C.textMid,display:"flex",alignItems:"center",gap:3}}>
+                  {ind.escudo_url?<img src={ind.escudo_url} alt="" style={{width:14,height:14,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>:<Shield size={10}/>}
+                  {ind.clube_atual}
+                </span>}
                 {ind.indicado_por&&<span style={{fontFamily:font,fontSize:11,color:C.textDim,display:"flex",alignItems:"center",gap:3}}><User size={10}/>por {ind.indicado_por}</span>}
               </div>
               {ind.observacao&&<div style={{fontFamily:font,fontSize:11,color:C.textDim,marginTop:4,lineHeight:1.4}}>{ind.observacao}</div>}
@@ -2346,8 +2358,27 @@ function IndicacoesPage({indicacoes=[],addIndicacao,updateIndicacao,removeIndica
 // PAGE: PROTOCOLOS
 // ═══════════════════════════════════════════════
 function ProtocolosPage() {
+  const WORKFLOW = [
+    {titulo:"PRÉ-JOGO",cor:C.red,etapas:["Scout de adversário (tarefa URGENTE)","Análise tática compartilhada com comissão técnica"]},
+    {titulo:"PÓS-JOGO (D+0 a D+2)",cor:C.red,etapas:["Gerente cria tarefas","Analistas recebem atribuições","Dados coletivos e individuais coletados","Vídeo pós-jogo","Alimentação banco de dados interno","Feedback individual","Entrega PDF próximo adversário"]},
+    {titulo:"DURANTE A SEMANA (>D+3)",cor:C.red,etapas:["Montagem vídeo adversário junto ao auxiliar da casa","Revisão de tarefas","Dashboard atualiza","Vídeos feedback coletivo último jogo","Vídeos adversário"]},
+    {titulo:"MENSAL",cor:C.red,etapas:["Avaliação de evolução de cada atleta","Review de produtividade dos analistas","Relatório consolidado para diretoria","Reunião interna"]},
+  ];
+
   return <div>
-    <Card><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Dados serão alimentados via Google Sheets.</div></Card>
+    <Card style={{marginBottom:16}}>
+      <div style={{fontFamily:fontD,fontSize:20,fontWeight:700,color:C.text,marginBottom:16,textTransform:"uppercase",letterSpacing:1}}>Workflow do Departamento</div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {WORKFLOW.map((w,i)=>(
+          <div key={i} style={{background:C.bgInput,borderRadius:8,padding:"14px 16px",borderLeft:`4px solid ${w.cor}`}}>
+            <div style={{fontFamily:fontD,fontSize:14,fontWeight:700,color:w.cor,marginBottom:8,textTransform:"uppercase"}}>{w.titulo}</div>
+            <div style={{fontFamily:font,fontSize:12,color:C.textMid,lineHeight:1.6}}>
+              {w.etapas.map((e,j)=><span key={j}>{e}{j<w.etapas.length-1?" → ":""}</span>)}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
   </div>;
 }
 
