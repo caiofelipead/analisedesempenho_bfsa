@@ -2127,20 +2127,39 @@ function VideosPage({videos=[],athleteMode=false,athleteInfo=null,partidas=[],ca
 // ═══════════════════════════════════════════════
 // PAGE: ANALISTAS
 // ═══════════════════════════════════════════════
+const ATRIBUICOES_TAREFA = [
+  {value:"analise_adversario",label:"Análise de Adversário"},
+  {value:"video_individual",label:"Vídeos Individuais"},
+  {value:"prelecao",label:"Preleção"},
+  {value:"modelo_jogo",label:"Modelo de Jogo"},
+  {value:"bola_parada",label:"Bolas Paradas"},
+  {value:"treino",label:"Treino / Coletivo"},
+  {value:"material_orientador",label:"Material Orientador"},
+  {value:"edicao_video",label:"Edição de Vídeo"},
+  {value:"relatorio",label:"Relatório"},
+  {value:"outro",label:"Outro (especificar)"},
+];
+
 function AddTarefaForm({onAdd,onCancel}) {
   const [titulo,setTitulo]=useState("");
   const [analista,setAnalista]=useState("Semir");
   const [prazo,setPrazo]=useState("");
   const [prio,setPrio]=useState("media");
-  const [tipo,setTipo]=useState("analise_adversario");
-  const submit=()=>{if(!titulo.trim())return;onAdd({titulo,analista,prazo,prio,tipo,status:"pendente"})};
+  const [atribuicao,setAtribuicao]=useState("analise_adversario");
+  const [atribuicaoCustom,setAtribuicaoCustom]=useState("");
+  const submit=()=>{if(!titulo.trim())return;const tipoFinal=atribuicao==="outro"?atribuicaoCustom.trim()||"outro":atribuicao;onAdd({titulo,analista,prazo,prio,tipo:tipoFinal,status:"pendente"})};
+  const labelStyle={fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"};
+  const inputStyle={width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11,outline:"none"};
+  const selectStyle={width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11};
   return <Card style={{marginBottom:12,border:`1px solid ${C.gold}44`}}>
     <SH title="Nova Tarefa"/>
     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:8}}>
-      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Título</div><input value={titulo} onChange={e=>setTitulo(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11,outline:"none"}} placeholder="Descrição da tarefa..."/></div>
-      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Analista</div><select value={analista} onChange={e=>setAnalista(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11}}><option value="Semir">Semir</option><option value="Cassio">Cassio</option><option value="Caio">Caio</option></select></div>
-      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Prazo</div><input value={prazo} onChange={e=>setPrazo(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11,outline:"none"}} placeholder="dd/mm"/></div>
-      <div><div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:3,textTransform:"uppercase"}}>Prioridade</div><select value={prio} onChange={e=>setPrio(e.target.value)} style={{width:"100%",padding:"6px 8px",background:C.bgInput,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:font,fontSize:11}}><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div>
+      <div><div style={labelStyle}>Título</div><input value={titulo} onChange={e=>setTitulo(e.target.value)} style={inputStyle} placeholder="Descrição da tarefa..."/></div>
+      <div><div style={labelStyle}>Analista</div><select value={analista} onChange={e=>setAnalista(e.target.value)} style={selectStyle}><option value="Semir">Semir</option><option value="Cassio">Cassio</option><option value="Caio">Caio</option></select></div>
+      <div><div style={labelStyle}>Atribuição</div><select value={atribuicao} onChange={e=>setAtribuicao(e.target.value)} style={selectStyle}>{ATRIBUICOES_TAREFA.map(a=><option key={a.value} value={a.value}>{a.label}</option>)}</select></div>
+      <div><div style={labelStyle}>Prioridade</div><select value={prio} onChange={e=>setPrio(e.target.value)} style={selectStyle}><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option></select></div>
+      {atribuicao==="outro"&&<div style={{gridColumn:"1 / -1"}}><div style={labelStyle}>Especificar Atribuição</div><input value={atribuicaoCustom} onChange={e=>setAtribuicaoCustom(e.target.value)} style={inputStyle} placeholder="Descreva a atribuição..."/></div>}
+      <div><div style={labelStyle}>Prazo</div><input value={prazo} onChange={e=>setPrazo(e.target.value)} style={inputStyle} placeholder="dd/mm"/></div>
     </div>
     <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
       <button onClick={onCancel} style={{padding:"5px 12px",background:"transparent",border:`1px solid ${C.border}`,borderRadius:4,color:C.textDim,fontFamily:font,fontSize:10,cursor:"pointer"}}>Cancelar</button>
@@ -2171,14 +2190,18 @@ function AnalistasPage({tarefas=[],addTarefa,updateTarefa,removeTarefa,showAddTa
       {tarefas.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhuma tarefa cadastrada. Clique em "Nova Tarefa" para adicionar.</div>}
       {tarefas.map(t=>{
         const sc={concluida:C.green,em_andamento:C.yellow,pendente:C.textDim,atrasada:C.red};
-        return <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:sc[t.status]||C.textDim,cursor:"pointer"}} onClick={()=>{const next={pendente:"em_andamento",em_andamento:"concluida",concluida:"pendente",atrasada:"em_andamento"};updateTarefa(t.id,{status:next[t.status]||"pendente"})}}/>
-          <div style={{flex:1}}>
-            <div style={{fontFamily:font,fontSize:11,color:C.text}}>{t.titulo}</div>
-            <div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{t.analista} · {t.prazo}</div>
+        const atribLabel=(ATRIBUICOES_TAREFA.find(a=>a.value===t.tipo)||{}).label||t.tipo||"";
+        const isDone=t.status==="concluida";
+        return <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:4,border:`1px solid ${isDone?C.green+"33":C.border}`,marginBottom:4,opacity:isDone?0.7:1}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:sc[t.status]||C.textDim,cursor:"pointer",flexShrink:0}} onClick={()=>{const next={pendente:"em_andamento",em_andamento:"concluida",concluida:"pendente",atrasada:"em_andamento"};updateTarefa(t.id,{status:next[t.status]||"pendente"})}} title="Clique para mudar status"/>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontFamily:font,fontSize:11,color:C.text,textDecoration:isDone?"line-through":"none"}}>{t.titulo}</div>
+            <div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{t.analista} · {t.prazo}{atribLabel?` · ${atribLabel}`:""}</div>
           </div>
           <Badge color={sc[t.status]}>{(t.status||"pendente").replace("_"," ")}</Badge>
           <PrioBadge p={t.prio}/>
+          {!isDone&&<button onClick={()=>updateTarefa(t.id,{status:"concluida"})} title="Marcar como feito" style={{background:"none",border:`1px solid ${C.green}44`,borderRadius:4,cursor:"pointer",padding:"2px 6px",display:"flex",alignItems:"center",gap:3}}><CheckCircle size={12} color={C.green}/><span style={{fontFamily:font,fontSize:9,color:C.green,fontWeight:600}}>Feito</span></button>}
+          {isDone&&<button onClick={()=>updateTarefa(t.id,{status:"pendente"})} title="Reabrir tarefa" style={{background:"none",border:`1px solid ${C.yellow}44`,borderRadius:4,cursor:"pointer",padding:"2px 6px",display:"flex",alignItems:"center",gap:3}}><RefreshCw size={12} color={C.yellow}/><span style={{fontFamily:font,fontSize:9,color:C.yellow,fontWeight:600}}>Reabrir</span></button>}
           <button onClick={()=>removeTarefa(t.id)} style={{background:"none",border:"none",cursor:"pointer",padding:2}}><XCircle size={14} color={C.red}/></button>
         </div>;
       })}
