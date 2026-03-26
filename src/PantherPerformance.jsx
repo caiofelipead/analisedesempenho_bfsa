@@ -848,29 +848,102 @@ function AdversarioPage({partidas=[],calendario=[],proxAdv,checklist,setChecklis
 // ═══════════════════════════════════════════════
 // PAGE: PRELEÇÃO
 // ═══════════════════════════════════════════════
-function PrelecaoPage({videos=[],proxAdv}) {
-  const prelecoes=videos.filter(v=>v.tipo==="prelecao");
+function PrelecaoPage({videos=[],proxAdv,checklist=[],advLinks={},partidas=[]}) {
+  const advName = proxAdv ? proxAdv.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"") : "";
+  const matchVideo = (v) => {
+    if(!advName) return false;
+    const t = (v.titulo||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const p = (v.partida||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    return t.includes(advName) || p.includes(advName);
+  };
+
+  // Videos related to the next opponent
+  const advVideos = videos.filter(v=>(v.tipo==="analise_adversario"||v.tipo==="jogo_completo") && matchVideo(v));
+  const bpVideos = videos.filter(v=>(v.tipo==="bola_parada"||v.tipo==="bola_parada_goleiro") && matchVideo(v));
+  const prelecaoVideos = videos.filter(v=>v.tipo==="prelecao" && matchVideo(v));
+  const allRelated = [...prelecaoVideos,...advVideos,...bpVideos];
+
+  // All prelecao-type videos (for "anteriores")
+  const allPrelecoes = videos.filter(v=>v.tipo==="prelecao");
+  // Also show adversário analysis videos as usable preleção material
+  const allAdvVideos = videos.filter(v=>v.tipo==="analise_adversario"||v.tipo==="jogo_completo");
+
+  // Checklist merged
+  const mergedChecklist = (()=>{
+    const fixed = FIXED_CHECKLIST.map(f=>{const s=checklist.find(c=>c.label===f.label&&c.fixed);return s?{...s,fixed:true}:{...f,done:false};});
+    const custom = checklist.filter(c=>!c.fixed);
+    return [...fixed,...custom];
+  })();
+  const doneCount = mergedChecklist.filter(c=>c.done).length;
+
+  const tipoColors = {analise_adversario:C.red,jogo_completo:C.blue,bola_parada:C.yellow,bola_parada_goleiro:C.cyan,prelecao:C.purple};
+  const tipoLabels = {analise_adversario:"Análise Adv.",jogo_completo:"Jogo Completo",bola_parada:"Bola Parada",bola_parada_goleiro:"BP Goleiro",prelecao:"Preleção"};
+
+  const VideoRow = ({v}) => (
+    <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4,cursor:v.link?"pointer":"default"}}
+      onClick={()=>v.link&&window.open(v.link,"_blank")}
+      onMouseEnter={e=>e.currentTarget.style.borderColor=C.gold} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
+      <Play size={14} color={tipoColors[v.tipo]||C.purple}/>
+      <div style={{flex:1}}>
+        <div style={{fontFamily:font,fontSize:12,color:C.text}}>{v.titulo}</div>
+        <div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{v.data}{v.dur?` · ${v.dur}`:""}{v.responsavel?` · ${v.responsavel}`:""}</div>
+      </div>
+      <Badge color={tipoColors[v.tipo]||C.purple}>{tipoLabels[v.tipo]||v.tipo}</Badge>
+      <PlatBadge p={v.plat}/>
+    </div>
+  );
+
   return <div>
+    {/* Próxima Preleção */}
     {proxAdv ? <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.purpleDim} 0%,transparent 50%)`}}>
       <SH title="Próxima Preleção"/>
-      <div style={{display:"flex",alignItems:"center",gap:16}}>
-        <div style={{width:48,height:48,borderRadius:6,background:`${C.purple}22`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden"}}>
-          {proxAdv.escudo?<img src={proxAdv.escudo} alt={proxAdv.nome} style={{width:34,height:34,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>:<FileText size={22} color={C.purple}/>}
+      <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
+        <div style={{width:56,height:56,borderRadius:8,background:`${C.purple}22`,display:"flex",alignItems:"center",justifyContent:"center",overflow:"hidden",border:`2px solid ${C.purple}44`}}>
+          {proxAdv.escudo?<img src={proxAdv.escudo} alt={proxAdv.nome} style={{width:38,height:38,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>:<FileText size={22} color={C.purple}/>}
         </div>
         <div style={{flex:1}}>
-          <div style={{fontFamily:fontD,fontSize:20,color:C.text,display:"flex",alignItems:"center",gap:8}}>vs {proxAdv.nome} — {proxAdv.data} <CompLogo comp={proxAdv.comp} size={18}/></div>
-          <div style={{fontFamily:font,fontSize:11,color:C.textDim}}>Depende da análise de adversário ({proxAdv.progresso}% concluída)</div>
+          <div style={{fontFamily:fontD,fontSize:22,color:C.text,display:"flex",alignItems:"center",gap:8,fontWeight:700}}>vs {proxAdv.nome} — {proxAdv.data} <CompLogo comp={proxAdv.comp} size={18}/></div>
+          <div style={{marginTop:6,display:"flex",alignItems:"center",gap:10}}>
+            <ProgressBar pct={proxAdv.progresso} color={proxAdv.progresso>=80?C.green:C.yellow}/>
+            <span style={{fontFamily:fontD,fontSize:14,color:proxAdv.progresso>=80?C.green:C.yellow}}>{proxAdv.progresso}%</span>
+          </div>
         </div>
-        <Badge color={proxAdv.progresso>=80?C.yellow:C.textDim}>{proxAdv.progresso>=80?"PRONTO P/ MONTAR":"AGUARDANDO ANÁLISE"}</Badge>
+        <Badge color={proxAdv.progresso>=80?C.green:C.textDim}>{proxAdv.progresso>=80?"PRONTO P/ MONTAR":"AGUARDANDO ANÁLISE"}</Badge>
       </div>
     </Card> : <Card style={{marginBottom:16}}><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Sincronize com Google Sheets para ver a próxima preleção.</div></Card>}
+
+    {/* Checklist da Análise */}
+    {proxAdv && <Card style={{marginBottom:16}}>
+      <SH title="Checklist — Materiais da Preleção" count={`${doneCount}/${mergedChecklist.length}`}/>
+      <div style={{marginBottom:10}}>
+        <ProgressBar pct={mergedChecklist.length?Math.round((doneCount/mergedChecklist.length)*100):0} color={doneCount===mergedChecklist.length?C.green:C.yellow}/>
+      </div>
+      {mergedChecklist.map((item,i)=>{
+        const key = `chk-${item.label}`;
+        const link = advLinks[key] || advLinks[item.label] || "";
+        return <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<mergedChecklist.length-1?`1px solid ${C.border}08`:"none"}}>
+          <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${item.done?C.green:C.border}`,background:item.done?`${C.green}22`:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {item.done&&<CheckCircle size={12} color={C.green}/>}
+          </div>
+          <span style={{fontFamily:font,fontSize:12,color:item.done?C.green:C.text,flex:1,textDecoration:item.done?"line-through":"none",opacity:item.done?0.7:1}}>{item.label}</span>
+          {link&&<a href={link} target="_blank" rel="noreferrer" style={{display:"flex",alignItems:"center",gap:3,fontFamily:font,fontSize:9,color:C.purple,textDecoration:"none",padding:"2px 6px",borderRadius:4,border:`1px solid ${C.purple}33`,background:`${C.purple}11`}} onClick={e=>e.stopPropagation()}><ExternalLink size={10}/> Link</a>}
+          <Badge color={item.done?C.green:C.textDim}>{item.done?"PRONTO":"PENDENTE"}</Badge>
+        </div>;
+      })}
+    </Card>}
+
+    {/* Vídeos do Próximo Adversário */}
+    {proxAdv && <Card style={{marginBottom:16}}>
+      <SH title={`Vídeos — ${proxAdv.nome}`} count={allRelated.length}/>
+      {allRelated.length===0 ? <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhum vídeo encontrado para "{proxAdv.nome}". Verifique se há vídeos com o nome do adversário na planilha.</div>
+        : allRelated.map(v=><VideoRow key={v.id} v={v}/>)}
+    </Card>}
+
+    {/* Todos os Vídeos de Análise */}
     <Card>
-      <SH title="Preleções Anteriores" count={prelecoes.length}/>
-      {prelecoes.map(v=>(
-        <div key={v.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4,cursor:"pointer"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.gold} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-          <Play size={14} color={C.purple}/><div style={{flex:1}}><div style={{fontFamily:font,fontSize:12,color:C.text}}>{v.titulo}</div><div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{v.data} · {v.dur}</div></div><PlatBadge p={v.plat}/>
-        </div>
-      ))}
+      <SH title="Todos os Vídeos de Análise" count={allAdvVideos.length}/>
+      {allAdvVideos.length===0 ? <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhum vídeo de análise encontrado. Adicione vídeos com tipo "Análise de Adversário" ou "Jogo Completo" na planilha.</div>
+        : allAdvVideos.map(v=><VideoRow key={v.id} v={v}/>)}
     </Card>
   </div>;
 }
@@ -2623,7 +2696,7 @@ export default function PantherPerformance() {
       case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;
       case "adversario": return <AdversarioPage partidas={partidas} calendario={calendario} proxAdv={proxAdv} checklist={advChecklist} setChecklist={setAdvChecklist} advLinks={advLinks} setAdvLinks={setAdvLinks}/>;
-      case "prelecao": return <PrelecaoPage videos={videos} proxAdv={proxAdv}/>;
+      case "prelecao": return <PrelecaoPage videos={videos} proxAdv={proxAdv} checklist={advChecklist} advLinks={advLinks} partidas={partidas}/>;
       case "partidas": return <PartidasPage videos={videos} partidas={partidas} calendario={calendario}/>;
       case "bolas-paradas": return <BolasParadasPage videos={videos} partidas={partidas} calendario={calendario} individual={individual} proxAdv={proxAdv}/>;
       case "treinos": return <TreinosPage videos={videos} partidas={partidas} calendario={calendario}/>;
