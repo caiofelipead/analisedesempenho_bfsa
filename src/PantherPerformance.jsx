@@ -939,9 +939,16 @@ function PrelecaoPage({videos=[],proxAdv,checklist=[],advLinks={},partidas=[]}) 
         : allRelated.map(v=><VideoRow key={v.id} v={v}/>)}
     </Card>}
 
+    {/* Preleções Anteriores */}
+    <Card style={{marginBottom:16}}>
+      <SH title="Preleções Anteriores" count={allPrelecoes.length}/>
+      {allPrelecoes.length===0 ? <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhuma preleção encontrada. Adicione vídeos com tipo "Preleção" na planilha.</div>
+        : allPrelecoes.map(v=><VideoRow key={v.id} v={v}/>)}
+    </Card>
+
     {/* Todos os Vídeos de Análise */}
     <Card>
-      <SH title="Todos os Vídeos de Análise" count={allAdvVideos.length}/>
+      <SH title="Vídeos de Análise e Jogo Completo" count={allAdvVideos.length}/>
       {allAdvVideos.length===0 ? <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:16,textAlign:"center"}}>Nenhum vídeo de análise encontrado. Adicione vídeos com tipo "Análise de Adversário" ou "Jogo Completo" na planilha.</div>
         : allAdvVideos.map(v=><VideoRow key={v.id} v={v}/>)}
     </Card>
