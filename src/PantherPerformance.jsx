@@ -276,17 +276,19 @@ function mapVideos(rows) {
     const comp = findCol(r,"Comp","comp","Competição","competição","Competicao") || "";
     const rodada = findCol(r,"Rodada","rodada") || "";
     const tipoRaw = (findCol(r,"Tipo","tipo") || "").toLowerCase().trim();
-    const tipo = tipoRaw.includes("jogo completo") ? "jogo_completo"
-      : tipoRaw.includes("relat") ? "analise_adversario"
-      : tipoRaw.includes("prelec") ? "prelecao"
-      : (tipoRaw.includes("adv") || tipoRaw.includes("análise de adv") || tipoRaw.includes("analise de adv")) ? "analise_adversario"
-      : (tipoRaw.includes("bola") || tipoRaw.includes("parada")) && tipoRaw.includes("goleiro") ? "bola_parada_goleiro"
-      : tipoRaw.includes("bola") || tipoRaw.includes("parada") ? "bola_parada"
-      : tipoRaw.includes("modelo") ? "modelo_jogo"
-      : tipoRaw.includes("treino") ? "treino"
-      : tipoRaw.includes("col") ? "coletivo"
-      : tipoRaw.includes("ind") ? "clip_individual"
-      : tipoRaw.includes("material") || tipoRaw.includes("orientador") ? "material_orientador"
+    const tipoNorm = tipoRaw.normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+    const tipo = tipoNorm.includes("jogo completo") ? "jogo_completo"
+      : tipoNorm.includes("relat") ? "analise_adversario"
+      : tipoNorm.includes("prelec") ? "prelecao"
+      : (tipoNorm.includes("adv") || tipoNorm.includes("analise de adv")) ? "analise_adversario"
+      : (tipoNorm.includes("bola") || tipoNorm.includes("parada")) && tipoNorm.includes("goleiro") ? "bola_parada_goleiro"
+      : tipoNorm.includes("bola") || tipoNorm.includes("parada") ? "bola_parada"
+      : tipoNorm.includes("modelo") ? "modelo_jogo"
+      : tipoNorm.includes("treino") ? "treino"
+      : tipoNorm.includes("col") ? "coletivo"
+      : tipoNorm.includes("ind") ? "clip_individual"
+      : tipoNorm.includes("material") || tipoNorm.includes("orientador") ? "material_orientador"
+      : tipoNorm.includes("pos jogo") || tipoNorm.includes("pos-jogo") ? "pos_jogo"
       : tipoRaw || "clip_individual";
     const dataStr = findCol(r,"Data","data") || "";
     let titulo = desc || [comp, rodada].filter(Boolean).join(" - ") || `Vídeo ${i + 1}`;
