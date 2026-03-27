@@ -237,6 +237,104 @@ export const PROGRAMACAO_SEMANAL = {
     },
     tarde: { tipo: "descanso" },
   },
+  // Semana 30/03 — 05/04
+  "2026-03-30": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "CT Botafogo Academy",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche",
+    },
+  },
+  "2026-03-31": {
+    manha: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "07h00", desc: "Apresentação" },
+        { hora: "08h00", desc: "Treino" },
+      ],
+      apos: "Lanche + Saída para Aeroporto",
+    },
+    tarde: {
+      tipo: "viagem",
+      local: "Viagem para Belo Horizonte-MG",
+      atividades: [],
+    },
+  },
+  "2026-04-01": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h30", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "jogo",
+      local: "Arena MRV",
+      atividades: [
+        { hora: "18h00", desc: "Brasileiro Série B — 2ª Rodada" },
+      ],
+    },
+  },
+  "2026-04-02": {
+    manha: { tipo: "descanso" },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-03": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala anexa)",
+    },
+  },
+  "2026-04-04": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "INÍCIO DE CONCENTRAÇÃO",
+    },
+  },
+  "2026-04-05": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h30", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "jogo",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "20h30", desc: "Brasileiro Série B — 3ª Rodada" },
+      ],
+    },
+  },
 };
 
 // ═══════════════════════════════════════════════

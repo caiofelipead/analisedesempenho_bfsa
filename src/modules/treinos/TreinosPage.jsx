@@ -131,8 +131,9 @@ export default function TreinosPage({videos=[],partidas=[],calendario=[]}) {
             const hasJogo = wd.jogos.length > 0;
             const hasTreino = wd.treinos.length > 0;
             const hasProg = wd.programacao && (wd.programacao.manha?.tipo === "treino" || wd.programacao.tarde?.tipo === "treino");
-            const bgColor = isToday ? `${C.gold}12` : hasJogo ? `${C.red}08` : (hasTreino||hasProg) ? `${C.green}08` : C.bg;
-            const borderColor = isToday ? C.gold+"55" : hasJogo ? C.red+"33" : (hasTreino||hasProg) ? C.green+"33" : C.border;
+            const hasProgJogo = wd.programacao && (wd.programacao.manha?.tipo === "jogo" || wd.programacao.tarde?.tipo === "jogo");
+            const bgColor = isToday ? `${C.gold}12` : (hasJogo||hasProgJogo) ? `${C.red}08` : (hasTreino||hasProg) ? `${C.green}08` : C.bg;
+            const borderColor = isToday ? C.gold+"55" : (hasJogo||hasProgJogo) ? C.red+"33" : (hasTreino||hasProg) ? C.green+"33" : C.border;
 
             return <div key={i} style={{
               background: bgColor, border: `1px solid ${borderColor}`,
@@ -226,6 +227,24 @@ export default function TreinosPage({videos=[],partidas=[],calendario=[]}) {
                     <div key={periodo} style={{background:`${C.textDim}10`,borderRadius:5,padding:"4px 6px",border:`1px solid ${C.border}`}}>
                       <div style={{fontFamily:fontD,fontSize:7,color:C.textDim,fontWeight:700,letterSpacing:"0.08em",marginBottom:1}}>{periodo}</div>
                       <div style={{fontFamily:font,fontSize:8,color:C.textDim,fontStyle:"italic"}}>Descanso Programado</div>
+                    </div>
+                  );
+                  if (data.tipo === "viagem") return (
+                    <div key={periodo} style={{background:`${C.gold}12`,borderRadius:5,padding:"5px 6px",border:`1px solid ${C.gold}28`}}>
+                      <div style={{fontFamily:fontD,fontSize:7,color:C.gold,fontWeight:700,letterSpacing:"0.08em",marginBottom:2}}>{periodo}</div>
+                      {data.local && <div style={{fontFamily:font,fontSize:8,color:C.gold,fontWeight:600}}>{data.local}</div>}
+                    </div>
+                  );
+                  if (data.tipo === "jogo") return (
+                    <div key={periodo} style={{background:`${C.red}12`,borderRadius:5,padding:"5px 6px",border:`1px solid ${C.red}28`}}>
+                      <div style={{fontFamily:fontD,fontSize:7,color:C.red,fontWeight:700,letterSpacing:"0.08em",marginBottom:2}}>{periodo}</div>
+                      {data.local && <div style={{fontFamily:font,fontSize:7,color:C.gold,fontWeight:600,marginBottom:3}}>{data.local}</div>}
+                      {data.atividades && data.atividades.map((a,ai) => (
+                        <div key={ai} style={{display:"flex",gap:4,alignItems:"baseline",marginBottom:1}}>
+                          <span style={{fontFamily:fontD,fontSize:7,color:C.red,fontWeight:700,flexShrink:0}}>{a.hora}</span>
+                          <span style={{fontFamily:font,fontSize:8,color:C.text,lineHeight:1.2}}>{a.desc}</span>
+                        </div>
+                      ))}
                     </div>
                   );
                   return (
