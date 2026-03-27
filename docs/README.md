@@ -15,6 +15,7 @@ Sistema integrado de analise de desempenho do Botafogo de Futebol S/A (BFSA).
 | [07 - Integracoes](./07-INTEGRACOES.md) | Google Sheets, Supabase, Wyscout parser e Vercel serverless |
 | [08 - Deploy e Configuracao](./08-DEPLOY.md) | Instalacao, variaveis de ambiente, deploy frontend/backend |
 | [09 - Guia de Contribuicao](./09-GUIA-CONTRIBUICAO.md) | Padroes de codigo, fluxo de trabalho e convencoes |
+| [10 - Analise Tecnica](./10-ANALISE-TECNICA.md) | Dividas tecnicas, problemas criticos e plano de melhorias |
 
 ## Estrutura do Repositorio
 
