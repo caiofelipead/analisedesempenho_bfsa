@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-bfsa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bfsa_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-bfsa}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./supabase_setup.sql:/docker-entrypoint-initdb.d/01-setup.sql
+      - ./performance_schema.sql:/docker-entrypoint-initdb.d/02-performance.sql
+      - ./adversario_schema.sql:/docker-entrypoint-initdb.d/03-adversario.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bfsa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
