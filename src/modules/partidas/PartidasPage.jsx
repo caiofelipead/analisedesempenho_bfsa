@@ -10,15 +10,31 @@ export default function PartidasPage({videos=[],partidas=[],calendario=[]}) {
     if(da&&db) return da-db;
     return (a.data||"").localeCompare(b.data||"");
   });
-  const posVideos = (adv) => videos.filter(v=>v.partida===adv||v.tipo==="jogo_completo"&&(v.titulo||"").toLowerCase().includes(adv.toLowerCase()));
+  const advNorm = (adv) => (adv||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const matchesAdv = (v, adv) => {
+    const a = advNorm(adv);
+    if(!a) return false;
+    const t = advNorm(v.titulo);
+    const p = advNorm(v.partida);
+    return t.includes(a) || p.includes(a);
+  };
+  const allMatchVideos = (adv) => videos.filter(v=>v.partida===adv|| matchesAdv(v,adv));
+  const getPosLink = (adv) => {
+    const v = videos.find(v=>(v.tipo==="pos_jogo"||v.tipo==="analise_adversario") && matchesAdv(v,adv) && (v.link||v.linkAlt));
+    return v ? (v.link||v.linkAlt) : null;
+  };
+  const getJogoLink = (adv) => {
+    const v = videos.find(v=>v.tipo==="jogo_completo" && matchesAdv(v,adv) && (v.link||v.linkAlt));
+    return v ? (v.link||v.linkAlt) : null;
+  };
   return <div>
     <SH title="Partidas + Pós-Jogo" count={partidas.length}/>
     {partidas.length===0&&<Card><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Nenhuma partida carregada. Sincronize com Google Sheets.</div></Card>}
     {sorted.map((p)=>{
       const rodNum = p.rod || "";
-      const matchVideos = posVideos(p.adv);
-      const firstVideo = matchVideos.find(v=>v.link||v.linkAlt);
-      const videoLink = firstVideo ? (firstVideo.link||firstVideo.linkAlt) : null;
+      const matchVideos = allMatchVideos(p.adv);
+      const posLink = getPosLink(p.adv);
+      const jogoLink = getJogoLink(p.adv);
       return (
       <Card key={p.id} style={{marginBottom:8,display:"flex",alignItems:"center",gap:14}}>
         <div style={{width:50,textAlign:"center"}}><ResBadge r={p.res}/></div>
@@ -33,10 +49,10 @@ export default function PartidasPage({videos=[],partidas=[],calendario=[]}) {
           </div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          <span onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined} style={{cursor:videoLink?"pointer":"default"}} title={videoLink?"Abrir vídeo pós-jogo":""}>
+          <span onClick={posLink?()=>window.open(posLink,"_blank"):undefined} style={{cursor:posLink?"pointer":"default"}} title={posLink?"Abrir pós-jogo":""}>
             <Badge color={p.posJogoDone?C.green:C.yellow}>{p.posJogoDone?"PÓS ✓":"PENDENTE"}</Badge>
           </span>
-          <span onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined} style={{cursor:videoLink?"pointer":"default"}} title={videoLink?"Abrir vídeo":""}>
+          <span onClick={jogoLink?()=>window.open(jogoLink,"_blank"):undefined} style={{cursor:jogoLink?"pointer":"default"}} title={jogoLink?"Abrir jogo completo":""}>
             <Badge color={C.blue}><Video size={9}/> {matchVideos.length}</Badge>
           </span>
         </div>
