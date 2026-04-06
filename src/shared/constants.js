@@ -76,6 +76,7 @@ export const FIXED_CHECKLIST = [
   {label:"Vídeo bolas paradas | Comissão Técnica",fixed:true},
   {label:"Vídeo Análise de Adversário",fixed:true},
   {label:"Descritivo individual",fixed:true},
+  {label:"Pós-jogo",fixed:true},
 ];
 
 // ═══════════════════════════════════════════════
@@ -334,6 +335,105 @@ export const PROGRAMACAO_SEMANAL = {
         { hora: "20h30", desc: "Brasileiro Série B — 3ª Rodada" },
       ],
     },
+  },
+  // Semana 06/04 — 12/04
+  "2026-04-06": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-07": {
+    manha: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-08": {
+    manha: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h00", desc: "Pré Treino (Sala anexa)" },
+        { hora: "08h30", desc: "Treino" },
+      ],
+      apos: "Lanche + Saída para Aeroporto",
+    },
+    tarde: {
+      tipo: "viagem",
+      local: "Viagem para Criciúma-SC",
+      atividades: [],
+    },
+  },
+  "2026-04-09": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "treino",
+      local: "Criciúma-SC",
+      atividades: [
+        { hora: "", desc: "Treino em Criciúma-SC" },
+      ],
+    },
+  },
+  "2026-04-10": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "jogo",
+      local: "Heriberto Hülse",
+      atividades: [
+        { hora: "20h30", desc: "Brasileiro Série B — 4ª Rodada" },
+      ],
+    },
+  },
+  "2026-04-11": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-12": {
+    manha: { tipo: "descanso" },
+    tarde: { tipo: "descanso" },
   },
 };
 
