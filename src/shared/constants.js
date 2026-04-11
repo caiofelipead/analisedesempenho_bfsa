@@ -65,6 +65,7 @@ export const ATLETAS = [
   { id:38,nome:"Henrique Teles",pos:"Lateral Esquerdo",num:0,status:"ativo",foto:`${PB}HENRIQUE%20TELES.png`,videos:"",tend:"estavel",cat:"profissional" },
   { id:39,nome:"Felipe Penha",pos:"Meia",num:0,status:"ativo",foto:"",videos:"",tend:"estavel",cat:"profissional" },
   { id:40,nome:"Pedrinho",pos:"Lateral Direito",num:0,status:"ativo",foto:`${PB}PEDRINHO.png`,videos:"",tend:"estavel",cat:"profissional" },
+  { id:41,nome:"Marco Antonio",pos:"Volante",num:0,status:"ativo",foto:"https://botafogofutebolsa.com.br/wp-content/uploads/2026/03/marco-antonio_site.jpg",videos:"",tend:"estavel",cat:"profissional" },
 ];
 
 // ═══════════════════════════════════════════════
