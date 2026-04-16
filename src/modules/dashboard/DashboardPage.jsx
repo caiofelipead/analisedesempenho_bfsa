@@ -16,7 +16,7 @@ export default function DashboardPage({nav,tarefas=[],videos=[],partidas=[],prox
   const der=partidas.filter(p=>p.res==="D").length;
   const atrasadas=tarefas.filter(t=>t.status==="atrasada");
   const pendentes=tarefas.filter(t=>t.status!=="concluida");
-  const chartData=partidas.map(p=>({j:`vs ${p.adv}`,r:p.res==="V"?3:p.res==="E"?1:0})).reverse();
+  const chartData=partidas.filter(p=>p.res==="V"||p.res==="E"||p.res==="D").slice(-8).map(p=>({j:`vs ${p.adv}`,r:p.res==="V"?3:p.res==="E"?2:1,res:p.res}));
   const tendMap=computeTendencies(individual);
   const subindo=ATLETAS.filter(a=>a.status==="ativo"&&tendMap[a.id]==="subindo");
 
@@ -51,7 +51,7 @@ export default function DashboardPage({nav,tarefas=[],videos=[],partidas=[],prox
         {chartData.length>0 ? <ResponsiveContainer width="100%" height={120}>
           <BarChart data={chartData} barSize={28}>
             <XAxis dataKey="j" tick={{fill:C.textDim,fontSize:9,fontFamily:font}} axisLine={false} tickLine={false}/>
-            <Bar dataKey="r" radius={[3,3,0,0]}>{chartData.map((e,i)=><Cell key={i} fill={e.r===3?C.green:e.r===1?C.yellow:C.red}/>)}</Bar>
+            <Bar dataKey="r" radius={[3,3,0,0]}>{chartData.map((e,i)=><Cell key={i} fill={e.res==="V"?C.green:e.res==="E"?C.yellow:C.red}/>)}</Bar>
           </BarChart>
         </ResponsiveContainer> : <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Nenhuma partida carregada.</div>}
       </Card>
