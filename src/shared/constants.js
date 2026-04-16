@@ -436,6 +436,104 @@ export const PROGRAMACAO_SEMANAL = {
     manha: { tipo: "descanso" },
     tarde: { tipo: "descanso" },
   },
+  // Semana 13/04 — 19/04
+  "2026-04-13": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-14": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-15": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-16": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-17": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-18": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "08h30", desc: "Apresentação" },
+        { hora: "09h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "10h00", desc: "Treino" },
+      ],
+      apos: "INÍCIO DE CONCENTRAÇÃO",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-19": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "jogo",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "16h00", desc: "Brasileiro Série B — 5ª Rodada (BFC x Atlético-GO)" },
+      ],
+    },
+  },
 };
 
 // ═══════════════════════════════════════════════
