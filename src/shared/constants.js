@@ -534,6 +534,96 @@ export const PROGRAMACAO_SEMANAL = {
       ],
     },
   },
+  // Semana 20/04 — 26/04
+  "2026-04-20": {
+    manha: {
+      tipo: "treino",
+      local: "Estádio Santa Cruz",
+      atividades: [
+        { hora: "12h15", desc: "Apresentação no vestiário" },
+        { hora: "12h30", desc: "Almoço Obrigatório" },
+      ],
+    },
+    tarde: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "15h00", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-21": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "08h30", desc: "Apresentação" },
+        { hora: "09h20", desc: "Treino" },
+      ],
+      apos: "Lanche + Saída para Aeroporto",
+    },
+    tarde: {
+      tipo: "viagem",
+      local: "Viagem para Cuiabá-MT",
+      atividades: [],
+    },
+  },
+  "2026-04-22": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: {
+      tipo: "jogo",
+      local: "Arena Pantanal",
+      atividades: [
+        { hora: "21h30", desc: "Brasileiro Série B — 6ª Rodada (Cuiabá x BFC)" },
+      ],
+    },
+  },
+  "2026-04-23": {
+    manha: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "07h30", desc: "Apresentação" },
+        { hora: "08h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "09h00", desc: "Treino Não Relacionados" },
+      ],
+      apos: "Almoço Obrigatório",
+    },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-24": {
+    manha: { tipo: "descanso" },
+    tarde: {
+      tipo: "treino",
+      local: "Campo Auxiliar",
+      atividades: [
+        { hora: "14h30", desc: "Apresentação" },
+        { hora: "15h20", desc: "Pré Treino (Sala anexa)" },
+        { hora: "16h00", desc: "Treino" },
+      ],
+      apos: "Lanche (Sala Anexa)",
+    },
+  },
+  "2026-04-25": {
+    manha: { tipo: "descanso" },
+    tarde: { tipo: "descanso" },
+  },
+  "2026-04-26": {
+    manha: { tipo: "descanso" },
+    tarde: { tipo: "descanso" },
+  },
 };
 
 // ═══════════════════════════════════════════════
