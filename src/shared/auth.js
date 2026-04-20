@@ -81,8 +81,8 @@ const env =
   (typeof window !== "undefined" && window.__ENV__) ||
   {};
 
-const ADMIN_PW_FALLBACK = "mercadobfsa";
-const VIEWER_PW_FALLBACK = "mercadobfsa";
+const ADMIN_PW_FALLBACK = "analisebfsa";
+const VIEWER_PW_FALLBACK = "analisebfsa";
 
 const pick = (...keys) => {
   for (const k of keys) {

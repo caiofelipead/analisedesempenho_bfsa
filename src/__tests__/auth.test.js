@@ -28,10 +28,10 @@ describe("auth seed directory", () => {
     }
   });
 
-  it("falls back to mercadobfsa when no env password is set", () => {
+  it("falls back to analisebfsa when no env password is set", () => {
     // In jest, no REACT_APP_* envs are set → expect fallback.
-    expect(AUTH_USERS.caiofelipe).toBe("mercadobfsa");
-    expect(AUTH_USERS.adalbertobaptista).toBe("mercadobfsa");
+    expect(AUTH_USERS.caiofelipe).toBe("analisebfsa");
+    expect(AUTH_USERS.adalbertobaptista).toBe("analisebfsa");
   });
 
   it("collapses legacy email-style keys (no caiofelipe@… duplicated)", () => {
