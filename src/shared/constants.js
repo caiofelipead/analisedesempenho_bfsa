@@ -598,9 +598,9 @@ export const normalizeLogin = (name) => name.normalize("NFD").replace(/[\u0300-\
 export const ATHLETE_LOGINS = {};
 ATLETAS.forEach(a => { ATHLETE_LOGINS[normalizeLogin(a.nome)] = a; });
 
-// AUTH_USERS agora é construído em ./auth.js (com roles + seed por env).
-// Mantemos re-export aqui para compatibilidade com imports legados.
-export { AUTH_USERS } from "./auth";
+// AUTH_USERS vive em ./auth.js. Não re-exportamos aqui para evitar ciclo
+// constants → auth → constants, que em produção gera TDZ ("Cannot access
+// 'X' before initialization") ao hoistar o re-export.
 
 export const isAthleteUser = (u) => !!ATHLETE_LOGINS[u];
 export const getAthleteData = (u) => ATHLETE_LOGINS[u] || null;

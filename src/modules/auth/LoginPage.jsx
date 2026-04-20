@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { CLight, font, fontD } from "../../shared/design";
-import { AUTH_USERS } from "../../shared/constants";
-import { isValidUsernameInput } from "../../shared/auth";
+import { AUTH_USERS, isValidUsernameInput } from "../../shared/auth";
 import { logAccess, EVENT_TYPES } from "../../shared/access";
 import { User, Lock, Eye } from "lucide-react";
 
