@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Crosshair, FileText, Shield, Target, Dumbbell, Users, Video, UserPlus, ClipboardList, Settings } from "lucide-react";
+import { BarChart3, BookOpen, Crosshair, FileText, Shield, Target, Dumbbell, Users, Video, UserPlus, ClipboardList, Settings, Lock } from "lucide-react";
 import { C } from "./design";
 
 // ═══════════════════════════════════════════════
@@ -586,6 +586,7 @@ export const NAV = [
   { section: "GESTÃO", items: [
     { id:"analistas",label:"Analistas",icon:ClipboardList },
     { id:"protocolos",label:"Protocolos",icon:Settings },
+    { id:"controle-acesso",label:"Controle de Acesso",icon:Lock },
   ]},
 ];
 
@@ -597,14 +598,9 @@ export const normalizeLogin = (name) => name.normalize("NFD").replace(/[\u0300-\
 export const ATHLETE_LOGINS = {};
 ATLETAS.forEach(a => { ATHLETE_LOGINS[normalizeLogin(a.nome)] = a; });
 
-export const AUTH_USERS = {
-  semirabrao: "analisebfsa",
-  cassiocabral: "analisebfsa",
-  caiofelipe: "analisebfsa",
-  fillipesoutto: "analisebfsa",
-  andreleite: "analisebfsa",
-  ...Object.keys(ATHLETE_LOGINS).reduce((acc, k) => { acc[k] = "atleta"; return acc; }, {}),
-};
+// AUTH_USERS agora é construído em ./auth.js (com roles + seed por env).
+// Mantemos re-export aqui para compatibilidade com imports legados.
+export { AUTH_USERS } from "./auth";
 
 export const isAthleteUser = (u) => !!ATHLETE_LOGINS[u];
 export const getAthleteData = (u) => ATHLETE_LOGINS[u] || null;

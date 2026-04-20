@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { CLight, font, fontD } from "../../shared/design";
 import { AUTH_USERS } from "../../shared/constants";
+import { isValidUsernameInput } from "../../shared/auth";
+import { logAccess, EVENT_TYPES } from "../../shared/access";
 import { User, Lock, Eye } from "lucide-react";
 
 export default function LoginPage({ onLogin }) {
@@ -9,12 +11,22 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState("");
   const [showPass, setShowPass] = useState(false);
 
+  const normalizeInput = (v) => String(v || "").trim().toLowerCase();
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const u = user.trim().toLowerCase();
+    const u = normalizeInput(user);
+    if (!isValidUsernameInput(u)) {
+      setError("Usuário inválido");
+      logAccess({ username: u || "anonymous", event_type: EVENT_TYPES.LOGIN_FAILURE, detail: "invalid_input" });
+      setTimeout(() => setError(""), 3000);
+      return;
+    }
     if (AUTH_USERS[u] && AUTH_USERS[u] === pass) {
+      logAccess({ username: u, event_type: EVENT_TYPES.LOGIN_SUCCESS, detail: "login_success" });
       onLogin(u);
     } else {
+      logAccess({ username: u, event_type: EVENT_TYPES.LOGIN_FAILURE, detail: "bad_credentials" });
       setError("Usuário ou senha incorretos");
       setTimeout(() => setError(""), 3000);
     }
@@ -47,8 +59,11 @@ export default function LoginPage({ onLogin }) {
             <div style={{position:"relative"}}>
               <User size={14} style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",color:"#5a6070"}}/>
               <input
-                value={user} onChange={e=>setUser(e.target.value)}
-                placeholder="Digite seu usuário"
+                value={user} onChange={e=>setUser(normalizeInput(e.target.value))}
+                placeholder="seunome"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 autoFocus
                 style={{
                   width:"100%",padding:"10px 12px 10px 36px",fontFamily:font,fontSize:13,
