@@ -24,7 +24,11 @@ import VideosPage from "./modules/videos/VideosPage";
 import AnalistasPage from "./modules/analistas/AnalistasPage";
 import IndicacoesPage from "./modules/indicacoes/IndicacoesPage";
 import ProtocolosPage from "./modules/protocolos/ProtocolosPage";
+import ControleAcessoPage from "./modules/controle-acesso/ControleAcessoPage";
 import LoginPage from "./modules/auth/LoginPage";
+import WatermarkOverlay from "./shared/WatermarkOverlay";
+import { logAccess, EVENT_TYPES } from "./shared/access";
+import { getDisplayName } from "./shared/auth";
 
 import {
   ChevronRight, ChevronDown, User, XCircle, Sun, Moon, RefreshCw,
@@ -56,6 +60,10 @@ export default function PantherPerformance() {
   useEffect(()=>{const t=setInterval(()=>setTime(new Date()),60000);return()=>clearInterval(t)},[]);
   useEffect(()=>{if(authedUser) sheets.sync()},[authedUser]);// eslint-disable-line
   useEffect(()=>{try{localStorage.setItem("bfsa_dark",isDark?"true":"false")}catch{}},[isDark]);
+  useEffect(()=>{
+    if(!authedUser) return;
+    logAccess({ username: authedUser, event_type: EVENT_TYPES.PAGE_VIEW, path: sub==="atleta-detail"?`atletas/${selId}`:page, detail: sub==="atleta-detail"?`Atleta #${selId}`:page });
+  },[authedUser,page,sub,selId]);
 
   if(!authedUser) return <LoginPage onLogin={handleLogin}/>;
 
@@ -104,6 +112,7 @@ export default function PantherPerformance() {
       case "analistas": return <AnalistasPage tarefas={tarefas} addTarefa={addTarefa} updateTarefa={updateTarefa} removeTarefa={removeTarefa} showAddTarefa={showAddTarefa} setShowAddTarefa={setShowAddTarefa}/>;
       case "indicacoes": return <IndicacoesPage indicacoes={indicacoes} addIndicacao={addIndicacao} updateIndicacao={updateIndicacao} removeIndicacao={removeIndicacao}/>;
       case "protocolos": return <ProtocolosPage/>;
+      case "controle-acesso": return <ControleAcessoPage authedUser={authedUser}/>;
       default: return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
     }
   };
@@ -112,9 +121,12 @@ export default function PantherPerformance() {
   const pageTitle=sub==="atleta-detail"?(ATLETAS.find(a=>a.id===selId)?.nome||"Atleta"):allItems.find(n=>n.id===page)?.label||"Dashboard";
   const toggleSection=(s)=>setCollapsed(p=>({...p,[s]:!p[s]}));
 
+  const watermarkLabel = getDisplayName(authedUser) || authedUser;
+
   // Athlete-only layout: no sidebar, clean header with logo + logout
   if(isAthlete) return (
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,transition:"background 0.3s ease, color 0.3s ease"}}>
+      <WatermarkOverlay user={watermarkLabel} isDark={isDark}/>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
@@ -172,6 +184,7 @@ export default function PantherPerformance() {
 
   return (
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:font,color:C.text,display:"flex",transition:"background 0.3s ease, color 0.3s ease"}}>
+      <WatermarkOverlay user={watermarkLabel} isDark={isDark}/>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Inter:wght@300;400;500;600;700&display=swap');
         *{box-sizing:border-box;margin:0;padding:0}
