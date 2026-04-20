@@ -10,15 +10,15 @@ const ORG = "BFSA · Análise de Desempenho";
 export default function WatermarkOverlay({ user, isDark = true }) {
   if (!user) return null;
   const text = `CONFIDENCIAL · ${ORG} · ${user}`;
-  const opacity = isDark ? 0.011 : 0.015;
+  const opacity = isDark ? 0.005 : 0.008;
   const color = isDark ? "#ffffff" : "#000000";
 
   // Grade esparsa — tiles bem espaçados pra identificar a marca sem
   // atrapalhar a leitura do conteúdo. Usamos CSS grid com células fixas.
-  const CELL_W = 820;
-  const CELL_H = 340;
+  const CELL_W = 960;
+  const CELL_H = 420;
   const COLS = 2;
-  const ROWS = 5;
+  const ROWS = 4;
 
   const cells = [];
   for (let r = 0; r < ROWS; r++) {
