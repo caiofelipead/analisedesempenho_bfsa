@@ -10,47 +10,48 @@ const ORG = "BFSA · Análise de Desempenho";
 export default function WatermarkOverlay({ user, isDark = true }) {
   if (!user) return null;
   const text = `CONFIDENCIAL · ${ORG} · ${user}`;
-  // Grid repetido — usamos <span>s em um flex wrap para ficar performático
-  // (sem depender de SVG de fundo, facilitando leitura em qualquer zoom).
-  const opacity = isDark ? 0.075 : 0.09;
+  const opacity = isDark ? 0.045 : 0.06;
   const color = isDark ? "#ffffff" : "#000000";
 
-  const tile = (
-    <span
-      style={{
-        fontFamily: font,
-        fontSize: 11,
-        fontWeight: 600,
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color,
-        whiteSpace: "nowrap",
-        padding: "8px 16px",
-      }}
-    >
-      {text}
-    </span>
-  );
+  // Grade esparsa — tiles bem espaçados pra identificar a marca sem
+  // atrapalhar a leitura do conteúdo. Usamos CSS grid com células fixas.
+  const CELL_W = 520;
+  const CELL_H = 180;
+  const COLS = 4;
+  const ROWS = 8;
 
-  // Linhas deslocadas para dar aspecto de grid denso.
-  const rows = [];
-  for (let i = 0; i < 24; i++) {
-    const offset = (i % 2 === 0 ? 0 : 120) - 60;
-    rows.push(
-      <div
-        key={i}
-        style={{
-          display: "flex",
-          transform: `translateX(${offset}px)`,
-          gap: 40,
-          marginBottom: 12,
-        }}
-      >
-        {Array.from({ length: 8 }, (_, j) => (
-          <React.Fragment key={j}>{tile}</React.Fragment>
-        ))}
-      </div>
-    );
+  const cells = [];
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const offsetX = (r % 2) * (CELL_W / 2);
+      cells.push(
+        <div
+          key={`${r}-${c}`}
+          style={{
+            width: CELL_W,
+            height: CELL_H,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transform: `translateX(${offsetX}px)`,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: font,
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {text}
+          </span>
+        </div>
+      );
+    }
   }
 
   return (
@@ -66,29 +67,28 @@ export default function WatermarkOverlay({ user, isDark = true }) {
         WebkitUserSelect: "none",
         opacity,
         overflow: "hidden",
-        transform: "rotate(-28deg)",
-        transformOrigin: "center center",
-        mixBlendMode: isDark ? "screen" : "multiply",
       }}
     >
       <style>{`
         @media print {
-          [data-testid="confidential-watermark"] { opacity: 0.18 !important; }
+          [data-testid="confidential-watermark"] { opacity: 0.2 !important; }
         }
       `}</style>
       <div
         style={{
           position: "absolute",
-          top: "-20%",
-          left: "-20%",
-          width: "140%",
-          height: "140%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
+          top: "-30%",
+          left: "-30%",
+          width: "160%",
+          height: "160%",
+          display: "grid",
+          gridTemplateColumns: `repeat(${COLS}, ${CELL_W}px)`,
+          gridAutoRows: `${CELL_H}px`,
+          transform: "rotate(-24deg)",
+          transformOrigin: "center center",
         }}
       >
-        {rows}
+        {cells}
       </div>
     </div>
   );
