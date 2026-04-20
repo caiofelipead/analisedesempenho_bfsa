@@ -77,3 +77,26 @@ CREATE POLICY "Acesso público indicacoes" ON indicacoes
 
 CREATE INDEX idx_indicacoes_status ON indicacoes(status);
 CREATE INDEX idx_indicacoes_created ON indicacoes(created_at DESC);
+
+-- ═══════════════════════════════════════════════
+-- Tabela de auditoria de acessos
+--   Eventos: login_success | login_failure | page_view | user_created | user_deleted
+-- ═══════════════════════════════════════════════
+CREATE TABLE access_logs (
+  id BIGSERIAL PRIMARY KEY,
+  email VARCHAR(200),
+  event_type VARCHAR(40) NOT NULL,
+  path TEXT,
+  ip VARCHAR(64),
+  user_agent TEXT,
+  detail TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE access_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Acesso público access_logs" ON access_logs
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE INDEX idx_access_logs_created ON access_logs(created_at DESC);
+CREATE INDEX idx_access_logs_email ON access_logs(email);
+CREATE INDEX idx_access_logs_event_type ON access_logs(event_type);
