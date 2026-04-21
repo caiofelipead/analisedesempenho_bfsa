@@ -8,14 +8,15 @@ import { Play, User } from "lucide-react";
 export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null,partidas=[],calendario=[]}) {
   const [search,setSearch]=useState("");
   const [ft,setFt]=useState("TODOS");
-  const tipos=["TODOS","jogo_completo","clip_individual","analise_adversario","treino","prelecao","bola_parada","bola_parada_goleiro","modelo_jogo"];
-  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Individual",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",bola_parada_goleiro:"BP Goleiro",modelo_jogo:"Modelo Jogo"};
+  const tipos=["TODOS","jogo_completo","clip_individual","descritivo_individual","analise_adversario","treino","prelecao","bola_parada","bola_parada_goleiro","modelo_jogo"];
+  const tipoLabel={jogo_completo:"Jogos",clip_individual:"Compilado",descritivo_individual:"Descritivo",analise_adversario:"Adversário",treino:"Treinos",prelecao:"Preleção",bola_parada:"Bola Parada",bola_parada_goleiro:"BP Goleiro",modelo_jogo:"Modelo Jogo"};
   const filtered=videos.filter(v=>(v.titulo.toLowerCase().includes(search.toLowerCase()))&&(ft==="TODOS"||v.tipo===ft));
   const escudoMap=useMemo(()=>Object.fromEntries([...partidas,...calendario].filter(x=>x.escudo).map(x=>[x.adv?.toLowerCase(),x.escudo])),[partidas,calendario]);
 
   // Color palette for video thumbnails based on type
   const thumbColors={
     clip_individual:["#d4232b","#ff4757"],
+    descritivo_individual:["#4a4a4a","#6a6a6a"],
     jogo_completo:["#1a1a2e","#16213e"],
     analise_adversario:["#0f3460","#533483"],
     treino:["#1b5e20","#2e7d32"],
@@ -42,11 +43,17 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
       {filtered.map(v=>{
         const videoLink = v.link || v.linkAlt || "";
         const colors = thumbColors[v.tipo] || ["#2a2a3e","#3a3a4e"];
-        const advName = v.partida || v.titulo || "";
+        const advName = (v.partida || v.titulo || "").trim();
+        const advNameLow = advName.toLowerCase();
         const BFSA_ESCUDO = "/3154_imgbank_1685113109.png";
-        const advEscudo = escudoMap[advName.toLowerCase()] || Object.entries(escudoMap).find(([k])=>advName.toLowerCase().includes(k))?.[1] || "";
+        // Try exact → substring (both directions) to find the opponent escudo
+        const advEscudo = escudoMap[advNameLow]
+          || Object.entries(escudoMap).find(([k])=>k && (advNameLow.includes(k) || k.includes(advNameLow)))?.[1]
+          || "";
         const escudo = advEscudo || BFSA_ESCUDO;
+        const hasAdvEscudo = !!advEscudo;
         const ytThumb = getYoutubeThumb(videoLink);
+        const isCompilado = v.tipo === "clip_individual";
         return <div key={v.id} onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined} style={{
           background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",
           cursor:videoLink?"pointer":"default",transition:"all 0.25s ease",boxShadow:"0 2px 10px rgba(0,0,0,0.18)"
@@ -64,8 +71,12 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
             {!ytThumb && <>
               <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)"}}/>
               <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%)"}}/>
-              <img src={escudo} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:84,height:84,objectFit:"contain",opacity:0.15,filter:"brightness(2)"}} onError={e=>{e.target.style.display="none"}}/>
+              <img src={escudo} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:96,height:96,objectFit:"contain",opacity:0.28,filter:"brightness(1.5) drop-shadow(0 2px 8px rgba(0,0,0,0.5))"}} onError={e=>{e.target.style.display="none"}}/>
             </>}
+            {/* Opponent escudo — prominent top-right badge (only when we actually matched an opponent) */}
+            {hasAdvEscudo && <div style={{position:"absolute",top:10,right:10,width:44,height:44,borderRadius:"50%",background:"rgba(255,255,255,0.95)",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 12px rgba(0,0,0,0.4)",zIndex:4,border:"2px solid rgba(255,255,255,0.8)"}}>
+              <img src={advEscudo} alt={advName} style={{width:32,height:32,objectFit:"contain"}} onError={e=>{e.currentTarget.parentElement.style.display="none"}}/>
+            </div>}
             {/* Stripe accent */}
             <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, ${C.gold}, ${colors[0]})`,zIndex:2}}/>
             {/* Play button */}
@@ -76,8 +87,8 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
             {v.dur&&<span style={{position:"absolute",bottom:10,right:10,fontFamily:font,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",padding:"3px 8px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",zIndex:3}}>{v.dur}</span>}
             {/* Platform badge on thumbnail */}
             {v.plat&&<span style={{position:"absolute",top:10,left:10,fontFamily:fontD,fontSize:9,color:"#fff",background:"rgba(0,0,0,0.65)",padding:"3px 9px",borderRadius:4,fontWeight:700,letterSpacing:"0.05em",backdropFilter:"blur(4px)",textTransform:"uppercase",zIndex:3}}>{platIcon[v.plat]||v.plat}</span>}
-            {/* Link indicator */}
-            {videoLink&&<span style={{position:"absolute",top:10,right:10,fontFamily:font,fontSize:8,color:"#4ade80",background:"rgba(0,0,0,0.65)",padding:"3px 7px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:3,zIndex:3}}>
+            {/* Link indicator (moved left so it doesn't collide with the escudo) */}
+            {videoLink&&<span style={{position:"absolute",top:v.plat?38:10,left:10,fontFamily:font,fontSize:8,color:"#4ade80",background:"rgba(0,0,0,0.65)",padding:"3px 7px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:3,zIndex:3}}>
               <span style={{width:5,height:5,borderRadius:"50%",background:"#4ade80",display:"inline-block"}}/>LINK
             </span>}
             {/* Type label overlay */}
@@ -85,7 +96,13 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
           </div>
           {/* Info section */}
           <div style={{padding:"12px 14px"}}>
-            <div style={{fontFamily:font,fontSize:13,color:C.text,fontWeight:600,marginBottom:6,lineHeight:1.3}}>{v.titulo}</div>
+            {isCompilado && <div style={{fontFamily:font,fontSize:9,color:colors[0],fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:3}}>Compilado do Jogo</div>}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+              {hasAdvEscudo && <img src={advEscudo} alt={advName} style={{width:22,height:22,objectFit:"contain",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>}
+              <div style={{fontFamily:font,fontSize:13,color:C.text,fontWeight:700,lineHeight:1.3}}>
+                {isCompilado && <span style={{color:C.textDim,fontWeight:500}}>vs </span>}{v.titulo}
+              </div>
+            </div>
             {v.atleta&&(()=>{
               const matchedAthlete = athleteInfo || ATLETAS.find(a=>normalizeLogin(a.nome)===normalizeLogin(v.atleta));
               return <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
@@ -97,7 +114,6 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
               </div>;
             })()}
             <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <img src={escudo} alt="" style={{width:16,height:16,objectFit:"contain",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>
               {v.data&&<span style={{fontFamily:font,fontSize:9,color:C.textDim,display:"inline-flex",alignItems:"center",gap:3}}>{v.data}{v.comp&&<><CompLogo comp={v.comp} size={10}/> {v.comp}</>}{v.rodada?` · ${v.rodada}`:""}</span>}
             </div>
           </div>

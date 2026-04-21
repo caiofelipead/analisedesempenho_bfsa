@@ -226,6 +226,8 @@ export function mapVideos(rows) {
       : tipoNorm.includes("modelo") ? "modelo_jogo"
       : tipoNorm.includes("treino") ? "treino"
       : tipoNorm.includes("col") ? "coletivo"
+      : tipoNorm.includes("descritivo") ? "descritivo_individual"
+      : (tipoNorm.includes("compilado") || tipoNorm.includes("recorte") || tipoNorm.includes("clip")) ? "clip_individual"
       : tipoNorm.includes("ind") ? "clip_individual"
       : tipoNorm.includes("material") || tipoNorm.includes("orientador") ? "material_orientador"
       : tipoNorm.includes("pos jogo") || tipoNorm.includes("pos-jogo") ? "pos_jogo"
