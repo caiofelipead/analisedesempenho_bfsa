@@ -107,6 +107,77 @@ export const Card = ({children,onClick,style:s}) => (
   </div>
 );
 
+// ═══════════════════════════════════════════════
+// RADAR CHART (SVG)
+// Compares up to 2 series (values + optional values2) across labels.
+// max is auto-computed from the data if not passed.
+// ═══════════════════════════════════════════════
+export const RadarChart = ({
+  labels=[],
+  values=[],
+  values2=null,
+  color1=C.gold,
+  color2=C.blue,
+  size=320,
+  rings=4,
+  showLabels=true,
+  labelColor=C.textDim,
+}) => {
+  const n = labels.length;
+  if (n < 3) return <div style={{fontFamily:font,fontSize:11,color:C.textDim,padding:10,textAlign:"center"}}>Dados insuficientes para o radar (mín. 3 eixos).</div>;
+  const cx = size / 2;
+  const cy = size / 2;
+  const padding = showLabels ? 48 : 16;
+  const r = (size - padding * 2) / 2;
+  const allVals = [...values, ...(values2 || [])].filter(v => v != null && isFinite(v));
+  const max = Math.max(1, ...allVals);
+  const angle = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
+  const point = (v, i) => {
+    const ratio = Math.max(0, Math.min(1, (v || 0) / max));
+    return [cx + Math.cos(angle(i)) * r * ratio, cy + Math.sin(angle(i)) * r * ratio];
+  };
+  const polygon = (arr) => arr.map((v, i) => point(v, i).join(",")).join(" ");
+  const ringPoly = (frac) => Array.from({length: n}, (_, i) => {
+    const x = cx + Math.cos(angle(i)) * r * frac;
+    const y = cy + Math.sin(angle(i)) * r * frac;
+    return `${x},${y}`;
+  }).join(" ");
+  return (
+    <svg width={size} height={size} style={{display:"block",margin:"0 auto",overflow:"visible"}}>
+      {/* Rings */}
+      {Array.from({length: rings}, (_, i) => (
+        <polygon key={`ring-${i}`} points={ringPoly((i + 1) / rings)} fill="none" stroke={C.border} strokeWidth={1} strokeOpacity={0.7}/>
+      ))}
+      {/* Axes */}
+      {labels.map((_, i) => {
+        const [x2, y2] = [cx + Math.cos(angle(i)) * r, cy + Math.sin(angle(i)) * r];
+        return <line key={`ax-${i}`} x1={cx} y1={cy} x2={x2} y2={y2} stroke={C.border} strokeWidth={1} strokeOpacity={0.5}/>;
+      })}
+      {/* Series 2 (comparison / average) behind */}
+      {values2 && <polygon points={polygon(values2)} fill={color2} fillOpacity={0.15} stroke={color2} strokeWidth={1.5} strokeOpacity={0.8} strokeDasharray="4,3"/>}
+      {/* Series 1 */}
+      <polygon points={polygon(values)} fill={color1} fillOpacity={0.25} stroke={color1} strokeWidth={2}/>
+      {/* Vertices */}
+      {values.map((v, i) => {
+        const [x, y] = point(v, i);
+        return <circle key={`v1-${i}`} cx={x} cy={y} r={3} fill={color1} stroke={C.bg} strokeWidth={1.5}/>;
+      })}
+      {values2 && values2.map((v, i) => {
+        const [x, y] = point(v, i);
+        return <circle key={`v2-${i}`} cx={x} cy={y} r={2.5} fill={color2} fillOpacity={0.9}/>;
+      })}
+      {/* Labels */}
+      {showLabels && labels.map((lbl, i) => {
+        const lr = r + 18;
+        const x = cx + Math.cos(angle(i)) * lr;
+        const y = cy + Math.sin(angle(i)) * lr;
+        const anchor = Math.abs(Math.cos(angle(i))) < 0.3 ? "middle" : Math.cos(angle(i)) > 0 ? "start" : "end";
+        return <text key={`lbl-${i}`} x={x} y={y} fontSize="9" fontFamily={font} fill={labelColor} textAnchor={anchor} dominantBaseline="middle" style={{textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>{lbl}</text>;
+      })}
+    </svg>
+  );
+};
+
 // Mini sparkline SVG component
 export const Sparkline = ({data, width=120, height=30, color}) => {
   if (!data || data.length < 2) return null;

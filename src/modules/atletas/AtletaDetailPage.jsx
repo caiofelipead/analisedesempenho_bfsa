@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { C, fontD, font } from "../../shared/design";
 import { ATLETAS, POS_METRICS } from "../../shared/constants";
 import { norm } from "../../shared/utils";
-import { SH, Card, Badge, ResBadge, Escudo, PlatBadge, Sparkline } from "../../shared/atoms";
+import { SH, Card, Badge, ResBadge, Escudo, PlatBadge, Sparkline, RadarChart } from "../../shared/atoms";
 import {
-  ArrowLeft, Play,
+  ArrowLeft, Play, BarChart3, Film, Activity,
 } from "lucide-react";
 
 export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], individual=[]}) {
+  const [tab, setTab] = useState("dados");
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
   const aN = norm(a.nome);
   const aVideos=videos.filter(v=>{ if(v.tipo!=="clip_individual") return false; const vN=norm(v.atleta); return vN===aN || vN.includes(aN) || aN.includes(vN); });
@@ -116,6 +118,39 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
     return avgLast > avgFirst * 1.05 ? `↑ +${pct}%` : avgLast < avgFirst * 0.95 ? `↓ ${pct}%` : "→ Estável";
   };
 
+  // ── Position peers comparison (avg per-90 of same-position athletes) ──
+  const posPeers = ATLETAS.filter(x => x.pos === a.pos && x.id !== a.id);
+  const posPeerStats = posPeers.map(peer => {
+    const peerN = norm(peer.nome);
+    const rows = individual.filter(r => {
+      const rN = norm(r.atleta);
+      return rN === peerN || rN.includes(peerN) || peerN.includes(rN);
+    });
+    const mins = rows.reduce((s, r) => s + (r.min || 0), 0);
+    const stats = {};
+    posKeys.forEach(({k}) => {
+      const total = rows.reduce((s, r) => s + (r[k] || 0), 0);
+      stats[k] = mins > 0 ? (total / mins) * 90 : 0;
+    });
+    return { peer, stats, hasData: rows.length > 0 };
+  }).filter(p => p.hasData);
+  const posAvg = {};
+  posKeys.forEach(({k}) => {
+    const vals = posPeerStats.map(p => p.stats[k]).filter(v => isFinite(v));
+    posAvg[k] = vals.length > 0 ? vals.reduce((s,v)=>s+v,0) / vals.length : 0;
+  });
+  const athletePer90 = Object.fromEntries(posKeys.map(({k}) => [k, posValues[k].per90]));
+  const radarLabels = posKeys.map(({label}) => label);
+  const radarValues = posKeys.map(({k}) => athletePer90[k] || 0);
+  const radarAvg = posKeys.map(({k}) => posAvg[k] || 0);
+  const hasPeerData = posPeerStats.length > 0;
+
+  const TABS = [
+    { id: "dados", label: "Dados", Icon: BarChart3 },
+    { id: "videos", label: "Vídeos", Icon: Film },
+    { id: "fisica", label: "Parte Física", Icon: Activity },
+  ];
+
   return <div>
     <button onClick={onBack} style={{background:"none",border:"none",color:C.textDim,cursor:"pointer",fontFamily:font,fontSize:11,display:"flex",alignItems:"center",gap:4,marginBottom:14,padding:0}}><ArrowLeft size={13}/>VOLTAR</button>
 
@@ -134,6 +169,59 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
         </div>
       </div>
     </Card>
+
+    {/* ── TABS ── */}
+    <div style={{display:"flex",gap:4,marginBottom:14,borderBottom:`1px solid ${C.border}`}}>
+      {TABS.map(({id,label,Icon})=>{
+        const active = tab === id;
+        return <button key={id} onClick={()=>setTab(id)} style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",background:"none",border:"none",borderBottom:`2px solid ${active?C.gold:"transparent"}`,color:active?C.gold:C.textDim,fontFamily:font,fontSize:11,fontWeight:active?700:500,textTransform:"uppercase",letterSpacing:"0.06em",cursor:"pointer",marginBottom:-1}}>
+          <Icon size={12}/>{label}
+        </button>;
+      })}
+    </div>
+
+    {tab === "dados" && <>
+    {/* ── RADAR: ATLETA vs MÉDIA DA POSIÇÃO ── */}
+    {totalJogos > 0 && <Card style={{marginBottom:14}}>
+      <SH title={`Radar — ${a.nome.split(" ")[0]} vs Média ${a.pos}`}/>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:10}}>
+        {hasPeerData ? `Comparação das métricas por 90 min do atleta vs média dos ${posPeerStats.length} atletas da mesma posição.` : "Sem dados de outros atletas da mesma posição para comparar."}
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"minmax(280px,1fr) minmax(240px,1fr)",gap:16,alignItems:"center"}}>
+        <RadarChart labels={radarLabels} values={radarValues} values2={hasPeerData?radarAvg:null} color1={C.gold} color2={C.blue} size={320}/>
+        <div>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+            <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:font,fontSize:10,color:C.text}}>
+              <span style={{width:10,height:10,borderRadius:"50%",background:C.gold}}/>{a.nome}
+            </span>
+            {hasPeerData && <span style={{display:"flex",alignItems:"center",gap:5,fontFamily:font,fontSize:10,color:C.text}}>
+              <span style={{width:10,height:10,borderRadius:"50%",background:C.blue,opacity:0.7}}/>Média {a.pos}
+            </span>}
+          </div>
+          <table style={{width:"100%",borderCollapse:"collapse",fontFamily:font,fontSize:10}}>
+            <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
+              <th style={{padding:"5px 6px",textAlign:"left",color:C.textDim,fontSize:8,textTransform:"uppercase",fontWeight:600}}>Métrica</th>
+              <th style={{padding:"5px 6px",textAlign:"right",color:C.gold,fontSize:8,textTransform:"uppercase",fontWeight:600}}>Atleta</th>
+              {hasPeerData && <th style={{padding:"5px 6px",textAlign:"right",color:C.blue,fontSize:8,textTransform:"uppercase",fontWeight:600}}>Média</th>}
+              {hasPeerData && <th style={{padding:"5px 6px",textAlign:"right",color:C.textDim,fontSize:8,textTransform:"uppercase",fontWeight:600}}>Δ</th>}
+            </tr></thead>
+            <tbody>{posKeys.map(({k,label},i)=>{
+              const v = athletePer90[k] || 0;
+              const m = posAvg[k] || 0;
+              const diff = v - m;
+              const diffColor = diff > 0.01 ? C.green : diff < -0.01 ? C.red : C.textDim;
+              const fmt = (x) => (k==="xg"||k==="gols"||k==="assist") ? x.toFixed(2) : x.toFixed(1);
+              return <tr key={i} style={{borderBottom:`1px solid ${C.border}33`}}>
+                <td style={{padding:"5px 6px",color:C.text}}>{label}</td>
+                <td style={{padding:"5px 6px",textAlign:"right",color:C.gold,fontFamily:fontD,fontWeight:700}}>{fmt(v)}</td>
+                {hasPeerData && <td style={{padding:"5px 6px",textAlign:"right",color:C.textMid,fontFamily:fontD}}>{fmt(m)}</td>}
+                {hasPeerData && <td style={{padding:"5px 6px",textAlign:"right",color:diffColor,fontFamily:fontD,fontWeight:600}}>{diff>=0?"+":""}{fmt(diff)}</td>}
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
+      </div>
+    </Card>}
 
     {/* ── MÉTRICAS-CHAVE POR POSIÇÃO ── */}
     <Card style={{marginBottom:14}}>
@@ -244,14 +332,56 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
         ))}</tbody>
       </table> : <div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center"}}>Nenhuma partida carregada.</div>}
     </Card>
+    </>}
 
-    {/* ── VÍDEOS ── */}
-    <Card><SH title="Vídeos" count={aVideos.length}/>
+    {tab === "videos" && <Card><SH title="Vídeos" count={aVideos.length}/>
       {aVideos.length>0?aVideos.map(v=>{
         const vLink = v.link || v.linkAlt || "";
         return <div key={v.id} onClick={vLink?()=>window.open(vLink,"_blank"):undefined} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4,cursor:vLink?"pointer":"default"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.gold} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
           <Play size={14} color={C.gold}/><div style={{flex:1}}><div style={{fontFamily:font,fontSize:12,color:C.text}}>{v.titulo}</div><div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{v.data}{v.dur?` · ${v.dur}`:""}</div></div>{vLink&&<span style={{fontFamily:font,fontSize:8,color:C.green,background:`${C.green}18`,padding:"2px 6px",borderRadius:3,textTransform:"uppercase",fontWeight:600}}>Link</span>}<PlatBadge p={v.plat}/>
         </div>;}):<div style={{fontFamily:font,fontSize:11,color:C.textDim,padding:10}}>Nenhum vídeo individual cadastrado.</div>}
+    </Card>}
+
+    {tab === "fisica" && <FisicaTab athlete={a}/>}
+  </div>;
+}
+
+// ═══════════════════════════════════════════════
+// PARTE FÍSICA — placeholder preparado para receber dados
+// Schema flexível: categorias (Antropometria, GPS, Testes, Monitoramento) → métricas → valores
+// ═══════════════════════════════════════════════
+function FisicaTab({athlete}) {
+  const categorias = [
+    { key:"antropo", label:"Antropometria", desc:"Peso, altura, % gordura, massa magra", metricas:["Peso (kg)","Altura (cm)","% Gordura","Massa Magra (kg)"] },
+    { key:"gps", label:"GPS / Carga Externa", desc:"Distância total, HSR, sprints, acelerações (por treino/jogo)", metricas:["Distância Total (m)","HSR >19km/h (m)","Sprints >25km/h","Acelerações >3m/s²","Desacelerações >-3m/s²","Vel. Máx (km/h)"] },
+    { key:"testes", label:"Testes Físicos", desc:"Salto, sprint 10/30m, YoYo, isométricos", metricas:["Salto CMJ (cm)","Sprint 10m (s)","Sprint 30m (s)","YoYo IR1 (m)","Isométrico Posterior (N)","Isométrico Adutor (N)"] },
+    { key:"monit", label:"Monitoramento Subjetivo", desc:"PSE, RPE, qualidade de sono, dor", metricas:["PSE (1-10)","RPE da sessão","Sono (h)","Qualidade do Sono (1-5)","Dor Muscular (1-5)","Prontidão (1-5)"] },
+  ];
+  return <div>
+    <Card style={{marginBottom:14,background:`linear-gradient(135deg,${C.blue}11,transparent)`,border:`1px dashed ${C.blue}55`}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+        <Activity size={16} color={C.blue}/>
+        <span style={{fontFamily:fontD,fontSize:14,color:C.text,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.06em"}}>Parte Física — {athlete.nome}</span>
+      </div>
+      <div style={{fontFamily:font,fontSize:11,color:C.textDim,lineHeight:1.5}}>
+        Estrutura preparada para receber dados da preparação física. As categorias abaixo são sugestões — conforme você alimentar a planilha (ou integração futura), os valores aparecerão aqui automaticamente. Basta me informar o nome das colunas/fonte que eu conecto.
+      </div>
     </Card>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+      {categorias.map(cat => (
+        <Card key={cat.key} style={{padding:14}}>
+          <div style={{fontFamily:fontD,fontSize:12,color:C.gold,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4}}>{cat.label}</div>
+          <div style={{fontFamily:font,fontSize:9,color:C.textDim,marginBottom:10,lineHeight:1.4}}>{cat.desc}</div>
+          <div style={{display:"flex",flexDirection:"column",gap:4}}>
+            {cat.metricas.map(m => (
+              <div key={m} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 8px",background:C.bgInput,borderRadius:4,border:`1px solid ${C.border}`}}>
+                <span style={{fontFamily:font,fontSize:10,color:C.text}}>{m}</span>
+                <span style={{fontFamily:fontD,fontSize:10,color:C.textDim,opacity:0.5}}>—</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
+    </div>
   </div>;
 }
