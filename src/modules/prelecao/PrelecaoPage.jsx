@@ -25,10 +25,15 @@ export default function PrelecaoPage({videos=[],proxAdv,checklist=[],advLinks={}
   // Also show adversário analysis videos as usable preleção material
   const allAdvVideos = videos.filter(v=>v.tipo==="analise_adversario"||v.tipo==="jogo_completo");
 
-  // Checklist merged
+  // Checklist merged — derive done from produzido && apresentado (with legacy fallback)
+  const hydrate = (item, base={}) => {
+    const produzido = item?.produzido != null ? !!item.produzido : !!item?.done;
+    const apresentado = item?.apresentado != null ? !!item.apresentado : !!item?.done;
+    return {...base, ...item, produzido, apresentado, done: produzido && apresentado};
+  };
   const mergedChecklist = (()=>{
-    const fixed = FIXED_CHECKLIST.map(f=>{const s=checklist.find(c=>c.label===f.label&&c.fixed);return s?{...s,fixed:true}:{...f,done:false};});
-    const custom = checklist.filter(c=>!c.fixed);
+    const fixed = FIXED_CHECKLIST.map(f=>{const s=checklist.find(c=>c.label===f.label&&c.fixed);return s?hydrate(s,{fixed:true}):{...f,produzido:false,apresentado:false,done:false};});
+    const custom = checklist.filter(c=>!c.fixed).map(c=>hydrate(c,{fixed:false}));
     return [...fixed,...custom];
   })();
   const doneCount = mergedChecklist.filter(c=>c.done).length;

@@ -27,12 +27,18 @@ export default function useAdvChecklist() {
         .order("position", { ascending: true });
       if (error) throw error;
       if (data && data.length > 0) {
-        setChecklist(data.map(r => ({
-          id: r.id,
-          label: r.label,
-          done: r.done,
-          fixed: r.fixed,
-        })));
+        setChecklist(data.map(r => {
+          const produzido = r.produzido != null ? !!r.produzido : !!r.done;
+          const apresentado = r.apresentado != null ? !!r.apresentado : !!r.done;
+          return {
+            id: r.id,
+            label: r.label,
+            produzido,
+            apresentado,
+            done: produzido && apresentado,
+            fixed: r.fixed,
+          };
+        }));
       }
     } catch (e) {
       console.error("[BFSA] Erro ao carregar checklist:", e.message);
@@ -45,19 +51,26 @@ export default function useAdvChecklist() {
 
   const syncToSupabase = useCallback(async (items) => {
     if (!supabase) return;
-    try {
-      // Delete all and re-insert to keep order
-      await supabase.from("adv_checklist").delete().neq("id", 0);
-      const rows = items.map((item, i) => ({
+    const buildRows = (withExtras) => items.map((item, i) => {
+      const produzido = !!item.produzido;
+      const apresentado = !!item.apresentado;
+      const base = {
         label: item.label,
-        done: !!item.done,
+        done: produzido && apresentado,
         fixed: !!item.fixed,
         position: i,
-      }));
-      if (rows.length > 0) {
-        const { error } = await supabase.from("adv_checklist").insert(rows);
-        if (error) throw error;
+      };
+      return withExtras ? { ...base, produzido, apresentado } : base;
+    });
+    try {
+      await supabase.from("adv_checklist").delete().neq("id", 0);
+      if (items.length === 0) return;
+      let { error } = await supabase.from("adv_checklist").insert(buildRows(true));
+      if (error && /produzido|apresentado|column/i.test(error.message || "")) {
+        console.warn("[BFSA] Colunas produzido/apresentado ausentes no Supabase. Rode o ALTER TABLE do supabase_setup.sql. Salvando sem elas.");
+        ({ error } = await supabase.from("adv_checklist").insert(buildRows(false)));
       }
+      if (error) throw error;
     } catch (e) {
       console.error("[BFSA] Erro ao sincronizar checklist:", e.message);
     }

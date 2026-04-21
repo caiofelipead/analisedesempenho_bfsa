@@ -17,21 +17,33 @@ export default function AdversarioPage({partidas=[],calendario=[],proxAdv,checkl
 
   // Merge fixed items with user-added items; fixed items always appear first
   const mergedChecklist = useMemo(()=>{
+    const hydrate = (item, base) => {
+      const produzido = item?.produzido != null ? !!item.produzido : !!item?.done;
+      const apresentado = item?.apresentado != null ? !!item.apresentado : !!item?.done;
+      return {...base, ...item, produzido, apresentado, done: produzido && apresentado};
+    };
     const fixed = FIXED_CHECKLIST.map(f=>{
       const saved = checklist.find(c=>c.label===f.label&&c.fixed);
-      return saved ? {...saved,fixed:true} : {...f,done:false};
+      return saved ? hydrate(saved,{fixed:true}) : {...f,produzido:false,apresentado:false,done:false};
     });
-    const custom = checklist.filter(c=>!c.fixed);
+    const custom = checklist.filter(c=>!c.fixed).map(c=>hydrate(c,{fixed:false}));
     return [...fixed,...custom];
   },[checklist]);
 
   const syncChecklist=(updated)=>{setChecklist(updated);};
-  const toggleCheck=(i)=>{const u=[...mergedChecklist];u[i]={...u[i],done:!u[i].done};syncChecklist(u);};
+  const toggleField=(i,field)=>{const u=[...mergedChecklist];const next={...u[i],[field]:!u[i][field]};next.done = !!next.produzido && !!next.apresentado;u[i]=next;syncChecklist(u);};
   const removeItem=(i)=>{if(mergedChecklist[i].fixed)return;syncChecklist(mergedChecklist.filter((_,idx)=>idx!==i));};
-  const addItem=()=>{if(newItem.trim()){syncChecklist([...mergedChecklist,{label:newItem.trim(),done:false,fixed:false}]);setNewItem("");}};
+  const addItem=()=>{if(newItem.trim()){syncChecklist([...mergedChecklist,{label:newItem.trim(),produzido:false,apresentado:false,done:false,fixed:false}]);setNewItem("");}};
   const startEdit=(i)=>{if(mergedChecklist[i].fixed)return;setEditingIdx(i);setEditVal(mergedChecklist[i].label);};
   const saveEdit=(i)=>{if(editVal.trim()){const u=[...mergedChecklist];u[i]={...u[i],label:editVal.trim()};syncChecklist(u);}setEditingIdx(null);};
   const doneCount=mergedChecklist.filter(c=>c.done).length;
+
+  const ToggleChip = ({active,label,onClick,color})=>(
+    <div onClick={onClick} title={label} style={{display:"flex",alignItems:"center",gap:4,cursor:"pointer",padding:"2px 6px",borderRadius:10,border:`1px solid ${active?color:C.border}`,background:active?`${color}18`:"transparent",transition:"all 0.15s"}}>
+      {active?<CheckCircle size={11} color={color}/>:<Circle size={11} color={C.textDim}/>}
+      <span style={{fontFamily:font,fontSize:9,color:active?color:C.textDim,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</span>
+    </div>
+  );
   return <div>
     {proxAdv && <Card style={{marginBottom:16,backgroundImage:`linear-gradient(135deg,${C.redDim} 0%,transparent 50%)`}}>
       <SH title="Em Andamento — Próximo Jogo"/>
@@ -56,13 +68,14 @@ export default function AdversarioPage({partidas=[],calendario=[],proxAdv,checkl
       </div>
       {mergedChecklist.map((item,i)=>(
         <div key={item.fixed?`fixed-${i}`:i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 0",borderBottom:i<mergedChecklist.length-1?`1px solid ${C.border}08`:"none"}} onMouseEnter={e=>e.currentTarget.style.background=C.bgCardHover} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-          <div style={{cursor:"pointer",display:"flex"}} onClick={()=>toggleCheck(i)}>
-            {item.done?<CheckCircle size={14} color={C.green}/>:<Circle size={14} color={C.textDim}/>}
+          <div style={{display:"flex",gap:4,flexShrink:0}}>
+            <ToggleChip active={!!item.produzido} label="Produzido" color={C.yellow} onClick={()=>toggleField(i,"produzido")}/>
+            <ToggleChip active={!!item.apresentado} label="Apresentado" color={C.green} onClick={()=>toggleField(i,"apresentado")}/>
           </div>
           {editingIdx===i?(
             <input value={editVal} onChange={e=>setEditVal(e.target.value)} onBlur={()=>saveEdit(i)} onKeyDown={e=>{if(e.key==="Enter")saveEdit(i);if(e.key==="Escape")setEditingIdx(null);}} autoFocus style={{flex:1,fontFamily:font,fontSize:12,color:C.text,background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:4,padding:"2px 6px",outline:"none"}}/>
           ):(
-            <span style={{flex:1,fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none",cursor:"pointer"}} onClick={()=>toggleCheck(i)}>{item.label}{item.fixed&&<Lock size={9} color={C.textDim} style={{marginLeft:6,verticalAlign:"middle",opacity:0.4}}/>}</span>
+            <span style={{flex:1,fontFamily:font,fontSize:12,color:item.done?C.textMid:C.text,textDecoration:item.done?"line-through":"none"}}>{item.label}{item.fixed&&<Lock size={9} color={C.textDim} style={{marginLeft:6,verticalAlign:"middle",opacity:0.4}}/>}</span>
           )}
           {!item.fixed&&<Edit3 size={12} color={C.textDim} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>startEdit(i)}/>}
           {!item.fixed&&<Trash2 size={12} color={C.red} style={{cursor:"pointer",opacity:0.5,flexShrink:0}} onClick={()=>removeItem(i)}/>}
