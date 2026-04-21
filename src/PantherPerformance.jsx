@@ -95,7 +95,7 @@ export default function PantherPerformance() {
 
   const renderPage=()=>{
     if(isAthlete) {
-      return <AtletaDetailPage id={athleteData.id} videos={videos} partidas={partidas} individual={individual}/>;
+      return <AtletaDetailPage id={athleteData.id} videos={videos} partidas={partidas} individual={individual} athleteMode/>;
     }
     if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
     switch(page){
