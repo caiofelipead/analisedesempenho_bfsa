@@ -8,7 +8,6 @@ import useSheets from "./hooks/useSheets";
 // Shared
 import { C, CDark, CLight, setTheme, font, fontD } from "./shared/design";
 import { ATLETAS, FIXED_CHECKLIST, NAV, isAthleteUser, getAthleteData } from "./shared/constants";
-import { normalizeLogin } from "./shared/utils";
 
 // Pages (lazy-loaded for code splitting)
 import DashboardPage from "./modules/dashboard/DashboardPage";
@@ -96,8 +95,7 @@ export default function PantherPerformance() {
 
   const renderPage=()=>{
     if(isAthlete) {
-      const myVideos = videos.filter(v=>v.tipo==="clip_individual"&&athleteData&&v.atleta&&normalizeLogin(v.atleta)===normalizeLogin(athleteData.nome));
-      return <VideosPage videos={myVideos} athleteMode athleteInfo={athleteData}/>;
+      return <AtletaDetailPage id={athleteData.id} videos={videos} partidas={partidas} individual={individual}/>;
     }
     if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
     switch(page){
@@ -167,17 +165,8 @@ export default function PantherPerformance() {
           </button>
         </div>
       </div>
-      {/* ATHLETE WELCOME + CONTENT */}
-      <div style={{maxWidth:1100,margin:"0 auto",padding:"24px 20px"}}>
-        {athleteData&&<div style={{marginBottom:24,padding:24,borderRadius:12,background:`linear-gradient(135deg, ${C.bgCard}, ${C.bgSidebar})`,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",gap:20}}>
-          {athleteData.foto&&<div style={{width:72,height:72,borderRadius:"50%",overflow:"hidden",border:`3px solid ${C.gold}`,flexShrink:0,background:C.bgInput}}>
-            <img src={athleteData.foto} alt={athleteData.nome} style={{width:"100%",height:"100%",objectFit:"cover"}} onError={e=>{e.target.style.display="none"}}/>
-          </div>}
-          <div>
-            <h1 style={{fontFamily:fontD,fontSize:22,fontWeight:700,color:C.text,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:2}}>Olá, {athleteData.nome.split(" ")[0]}</h1>
-            <p style={{fontFamily:font,fontSize:11,color:C.textDim}}>#{athleteData.num} · {athleteData.pos} · Acesse seus vídeos de análise individual abaixo</p>
-          </div>
-        </div>}
+      {/* ATHLETE CONTENT */}
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"24px 20px"}}>
         {renderPage()}
       </div>
     </div>
