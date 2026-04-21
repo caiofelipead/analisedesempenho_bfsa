@@ -76,7 +76,8 @@ export default function PantherPerformance() {
     const pending = calendario.find(c => !c.adv_ok);
     const match = pending || calendario[0];
     const mergedForPct = [...FIXED_CHECKLIST.map(f=>{const s=advChecklist.find(c=>c.label===f.label&&c.fixed);return s||{...f,done:false};}),...advChecklist.filter(c=>!c.fixed)];
-    const checkDone = mergedForPct.filter(c => c.done).length;
+    const isDone = (c)=>{const p=c.produzido!=null?!!c.produzido:!!c.done;const a=c.apresentado!=null?!!c.apresentado:!!c.done;return p && a;};
+    const checkDone = mergedForPct.filter(isDone).length;
     const checkTotal = mergedForPct.length;
     const pct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : (match.adv_ok ? 100 : 0);
     return { nome: match.adv, data: match.data, comp: `${match.comp} ${match.rodada}`, form: "", escudo: match.escudo || "", progresso: pct };

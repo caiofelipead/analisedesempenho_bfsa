@@ -29,9 +29,17 @@ CREATE TABLE adv_checklist (
   id BIGSERIAL PRIMARY KEY,
   label TEXT NOT NULL,
   done BOOLEAN DEFAULT FALSE,
+  produzido BOOLEAN DEFAULT FALSE,
+  apresentado BOOLEAN DEFAULT FALSE,
   fixed BOOLEAN DEFAULT FALSE,
   position INT DEFAULT 0
 );
+
+-- Migração para instalações existentes (idempotente):
+ALTER TABLE adv_checklist ADD COLUMN IF NOT EXISTS produzido BOOLEAN DEFAULT FALSE;
+ALTER TABLE adv_checklist ADD COLUMN IF NOT EXISTS apresentado BOOLEAN DEFAULT FALSE;
+UPDATE adv_checklist SET produzido = done WHERE produzido IS NULL;
+UPDATE adv_checklist SET apresentado = done WHERE apresentado IS NULL;
 
 ALTER TABLE adv_checklist ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Acesso público adv_checklist" ON adv_checklist
