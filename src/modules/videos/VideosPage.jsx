@@ -27,11 +27,18 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
   // Platform icons mapping
   const platIcon={google_drive:"GD",youtube:"YT",vimeo:"VM",wyscout:"WS",instat:"IN"};
 
+  // Extract YouTube video ID for real thumbnail preview
+  const getYoutubeThumb = (url) => {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+  };
+
   return <div>
     <SearchBar ph="Buscar vídeo..." val={search} onChange={setSearch}/>
     {!athleteMode&&<Tabs items={tipos.map(t=>tipoLabel[t]||t)} active={tipoLabel[ft]||ft} onChange={label=>{const key=Object.entries(tipoLabel).find(([k,v])=>v===label);setFt(key?key[0]:label==="TODOS"?"TODOS":label);}}/>}
     {videos.length===0&&<div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:20,textAlign:"center",background:C.bgCard,borderRadius:6,border:`1px solid ${C.border}`}}>{athleteMode?"Nenhum vídeo individual disponível no momento.":"Nenhum vídeo carregado. Sincronize com Google Sheets para carregar os vídeos da planilha."}</div>}
-    <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:14}}>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))",gap:16}}>
       {filtered.map(v=>{
         const videoLink = v.link || v.linkAlt || "";
         const colors = thumbColors[v.tipo] || ["#2a2a3e","#3a3a4e"];
@@ -39,36 +46,42 @@ export default function VideosPage({videos=[],athleteMode=false,athleteInfo=null
         const BFSA_ESCUDO = "/3154_imgbank_1685113109.png";
         const advEscudo = escudoMap[advName.toLowerCase()] || Object.entries(escudoMap).find(([k])=>advName.toLowerCase().includes(k))?.[1] || "";
         const escudo = advEscudo || BFSA_ESCUDO;
+        const ytThumb = getYoutubeThumb(videoLink);
         return <div key={v.id} onClick={videoLink?()=>window.open(videoLink,"_blank"):undefined} style={{
-          background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:10,overflow:"hidden",
-          cursor:videoLink?"pointer":"default",transition:"all 0.2s ease",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"
-        }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,0.25)";e.currentTarget.style.borderColor=colors[0]+"66"}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,0,0.15)";e.currentTarget.style.borderColor=C.border}}>
-          {/* Thumbnail cover */}
+          background:C.bgCard,border:`1px solid ${C.border}`,borderRadius:12,overflow:"hidden",
+          cursor:videoLink?"pointer":"default",transition:"all 0.25s ease",boxShadow:"0 2px 10px rgba(0,0,0,0.18)"
+        }} onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-4px)";e.currentTarget.style.boxShadow=`0 10px 28px rgba(0,0,0,0.35), 0 0 0 1px ${colors[0]}66`;e.currentTarget.style.borderColor=colors[0]+"88"}} onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 2px 10px rgba(0,0,0,0.18)";e.currentTarget.style.borderColor=C.border}}>
+          {/* Thumbnail cover — 16:9 */}
           <div style={{
-            width:"100%",height:120,position:"relative",overflow:"hidden",
+            width:"100%",aspectRatio:"16 / 9",position:"relative",overflow:"hidden",
             background:`linear-gradient(135deg, ${colors[0]}, ${colors[1]})`
           }}>
-            {/* Decorative pattern */}
-            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)"}}/>
-            <div style={{position:"absolute",top:0,left:0,right:0,bottom:0,background:"radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%)"}}/>
-            {/* Escudo do adversário ou Botafogo */}
-            <img src={escudo} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:64,height:64,objectFit:"contain",opacity:0.15,filter:"brightness(2)"}} onError={e=>{e.target.style.display="none"}}/>
+            {/* Real YouTube thumbnail (if applicable) */}
+            {ytThumb && <img src={ytThumb} alt="" style={{position:"absolute",inset:0,width:"100%",height:"100%",objectFit:"cover",transition:"transform 0.3s ease"}} onError={e=>{e.target.style.display="none"}}/>}
+            {/* Dark gradient overlay for text legibility */}
+            <div style={{position:"absolute",inset:0,background:ytThumb ? "linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.0) 30%, rgba(0,0,0,0.0) 60%, rgba(0,0,0,0.75) 100%)" : "transparent"}}/>
+            {/* Decorative pattern (only when no thumb) */}
+            {!ytThumb && <>
+              <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 50%)"}}/>
+              <div style={{position:"absolute",inset:0,background:"radial-gradient(circle at 20% 80%, rgba(255,255,255,0.05) 0%, transparent 40%)"}}/>
+              <img src={escudo} alt="" style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:84,height:84,objectFit:"contain",opacity:0.15,filter:"brightness(2)"}} onError={e=>{e.target.style.display="none"}}/>
+            </>}
             {/* Stripe accent */}
-            <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, ${C.gold}, ${colors[0]})`}}/>
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:3,background:`linear-gradient(90deg, ${C.gold}, ${colors[0]})`,zIndex:2}}/>
             {/* Play button */}
-            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:48,height:48,borderRadius:"50%",background:"rgba(0,0,0,0.45)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,0.2)",transition:"all 0.2s"}}>
-              <Play size={20} color="#fff" fill="#fff" style={{marginLeft:2}}/>
+            <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:58,height:58,borderRadius:"50%",background:"rgba(0,0,0,0.55)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",border:"2px solid rgba(255,255,255,0.35)",transition:"all 0.2s",boxShadow:"0 4px 14px rgba(0,0,0,0.4)"}}>
+              <Play size={24} color="#fff" fill="#fff" style={{marginLeft:3}}/>
             </div>
             {/* Duration badge */}
-            {v.dur&&<span style={{position:"absolute",bottom:8,right:8,fontFamily:font,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.65)",padding:"2px 8px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)"}}>{v.dur}</span>}
+            {v.dur&&<span style={{position:"absolute",bottom:10,right:10,fontFamily:font,fontSize:10,color:"#fff",background:"rgba(0,0,0,0.75)",padding:"3px 8px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",zIndex:3}}>{v.dur}</span>}
             {/* Platform badge on thumbnail */}
-            {v.plat&&<span style={{position:"absolute",top:8,left:8,fontFamily:fontD,fontSize:9,color:"#fff",background:"rgba(0,0,0,0.55)",padding:"2px 8px",borderRadius:4,fontWeight:700,letterSpacing:"0.05em",backdropFilter:"blur(4px)",textTransform:"uppercase"}}>{platIcon[v.plat]||v.plat}</span>}
+            {v.plat&&<span style={{position:"absolute",top:10,left:10,fontFamily:fontD,fontSize:9,color:"#fff",background:"rgba(0,0,0,0.65)",padding:"3px 9px",borderRadius:4,fontWeight:700,letterSpacing:"0.05em",backdropFilter:"blur(4px)",textTransform:"uppercase",zIndex:3}}>{platIcon[v.plat]||v.plat}</span>}
             {/* Link indicator */}
-            {videoLink&&<span style={{position:"absolute",top:8,right:8,fontFamily:font,fontSize:8,color:"#4ade80",background:"rgba(0,0,0,0.55)",padding:"2px 6px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:3}}>
+            {videoLink&&<span style={{position:"absolute",top:10,right:10,fontFamily:font,fontSize:8,color:"#4ade80",background:"rgba(0,0,0,0.65)",padding:"3px 7px",borderRadius:4,fontWeight:600,backdropFilter:"blur(4px)",display:"flex",alignItems:"center",gap:3,zIndex:3}}>
               <span style={{width:5,height:5,borderRadius:"50%",background:"#4ade80",display:"inline-block"}}/>LINK
             </span>}
             {/* Type label overlay */}
-            <div style={{position:"absolute",bottom:8,left:8,fontFamily:fontD,fontSize:9,color:"rgba(255,255,255,0.7)",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>{tipoLabel[v.tipo]||v.tipo}</div>
+            <div style={{position:"absolute",bottom:10,left:10,fontFamily:fontD,fontSize:9,color:"#fff",textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:700,background:`${colors[0]}ee`,padding:"3px 9px",borderRadius:4,zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.3)"}}>{tipoLabel[v.tipo]||v.tipo}</div>
           </div>
           {/* Info section */}
           <div style={{padding:"12px 14px"}}>

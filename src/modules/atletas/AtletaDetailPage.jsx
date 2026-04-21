@@ -3,12 +3,13 @@ import { C, fontD, font } from "../../shared/design";
 import { ATLETAS, POS_METRICS } from "../../shared/constants";
 import { norm } from "../../shared/utils";
 import { SH, Card, Badge, ResBadge, Escudo, PlatBadge, Sparkline, RadarChart } from "../../shared/atoms";
+import VideosPage from "../videos/VideosPage";
 import {
   ArrowLeft, Play, BarChart3, Film, Activity,
 } from "lucide-react";
 
-export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], individual=[]}) {
-  const [tab, setTab] = useState("dados");
+export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], individual=[], athleteMode=false}) {
+  const [tab, setTab] = useState(athleteMode ? "videos" : "dados");
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
   const aN = norm(a.nome);
   const aVideos=videos.filter(v=>{ if(v.tipo!=="clip_individual") return false; const vN=norm(v.atleta); return vN===aN || vN.includes(aN) || aN.includes(vN); });
@@ -145,7 +146,11 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
   const radarAvg = posKeys.map(({k}) => posAvg[k] || 0);
   const hasPeerData = posPeerStats.length > 0;
 
-  const TABS = [
+  const TABS = athleteMode ? [
+    { id: "videos", label: "Vídeos", Icon: Film },
+    { id: "dados", label: "Dados", Icon: BarChart3 },
+    { id: "fisica", label: "Parte Física", Icon: Activity },
+  ] : [
     { id: "dados", label: "Dados", Icon: BarChart3 },
     { id: "videos", label: "Vídeos", Icon: Film },
     { id: "fisica", label: "Parte Física", Icon: Activity },
@@ -334,13 +339,16 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
     </Card>
     </>}
 
-    {tab === "videos" && <Card><SH title="Vídeos" count={aVideos.length}/>
-      {aVideos.length>0?aVideos.map(v=>{
-        const vLink = v.link || v.linkAlt || "";
-        return <div key={v.id} onClick={vLink?()=>window.open(vLink,"_blank"):undefined} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:4,border:`1px solid ${C.border}`,marginBottom:4,cursor:vLink?"pointer":"default"}} onMouseEnter={e=>e.currentTarget.style.borderColor=C.gold} onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}>
-          <Play size={14} color={C.gold}/><div style={{flex:1}}><div style={{fontFamily:font,fontSize:12,color:C.text}}>{v.titulo}</div><div style={{fontFamily:font,fontSize:9,color:C.textDim}}>{v.data}{v.dur?` · ${v.dur}`:""}</div></div>{vLink&&<span style={{fontFamily:font,fontSize:8,color:C.green,background:`${C.green}18`,padding:"2px 6px",borderRadius:3,textTransform:"uppercase",fontWeight:600}}>Link</span>}<PlatBadge p={v.plat}/>
-        </div>;}):<div style={{fontFamily:font,fontSize:11,color:C.textDim,padding:10}}>Nenhum vídeo individual cadastrado.</div>}
-    </Card>}
+    {tab === "videos" && <div>
+      <div style={{fontFamily:fontD,fontSize:14,color:C.text,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
+        <Film size={14} color={C.gold}/> Biblioteca de Vídeos
+        <span style={{fontFamily:font,fontSize:10,color:C.gold,background:C.goldDim,padding:"2px 7px",borderRadius:3,fontWeight:600}}>{aVideos.length}</span>
+      </div>
+      <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:14}}>Clipes individuais, análises e materiais do atleta.</div>
+      {aVideos.length > 0
+        ? <VideosPage videos={aVideos} athleteMode athleteInfo={a} partidas={partidas}/>
+        : <Card><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:30,textAlign:"center"}}>Nenhum vídeo individual cadastrado.</div></Card>}
+    </div>}
 
     {tab === "fisica" && <FisicaTab athlete={a}/>}
   </div>;
