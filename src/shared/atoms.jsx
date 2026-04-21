@@ -109,8 +109,8 @@ export const Card = ({children,onClick,style:s}) => (
 
 // ═══════════════════════════════════════════════
 // RADAR CHART (SVG)
-// Compares up to 2 series (values + optional values2) across labels.
-// max is auto-computed from the data if not passed.
+// Each axis is normalized independently (per-axis max across values/values2)
+// so metrics of different scales (e.g. Minutos vs xG) stay comparable.
 // ═══════════════════════════════════════════════
 export const RadarChart = ({
   labels=[],
@@ -129,11 +129,16 @@ export const RadarChart = ({
   const cy = size / 2;
   const padding = showLabels ? 48 : 16;
   const r = (size - padding * 2) / 2;
-  const allVals = [...values, ...(values2 || [])].filter(v => v != null && isFinite(v));
-  const max = Math.max(1, ...allVals);
+  // Per-axis max — each dimension scales to its own peak so axes with large
+  // units (Minutos) don't flatten axes with small units (xG).
+  const axisMax = labels.map((_, i) => {
+    const v1 = Number.isFinite(values[i]) ? values[i] : 0;
+    const v2 = values2 && Number.isFinite(values2[i]) ? values2[i] : 0;
+    return Math.max(1e-9, v1, v2);
+  });
   const angle = (i) => (Math.PI * 2 * i) / n - Math.PI / 2;
   const point = (v, i) => {
-    const ratio = Math.max(0, Math.min(1, (v || 0) / max));
+    const ratio = Math.max(0, Math.min(1, (v || 0) / axisMax[i]));
     return [cx + Math.cos(angle(i)) * r * ratio, cy + Math.sin(angle(i)) * r * ratio];
   };
   const polygon = (arr) => arr.map((v, i) => point(v, i).join(",")).join(" ");
