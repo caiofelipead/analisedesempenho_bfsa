@@ -95,9 +95,9 @@ export default function PantherPerformance() {
 
   const renderPage=()=>{
     if(isAthlete) {
-      return <AtletaDetailPage id={athleteData.id} videos={videos} partidas={partidas} individual={individual} athleteMode/>;
+      return <AtletaDetailPage id={athleteData.id} videos={videos} partidas={partidas} individual={individual} calendario={calendario} athleteMode/>;
     }
-    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual}/>;
+    if(sub==="atleta-detail") return <AtletaDetailPage id={selId} onBack={goBack} videos={videos} partidas={partidas} individual={individual} calendario={calendario}/>;
     switch(page){
       case "dashboard": return <DashboardPage nav={nav} tarefas={tarefas} videos={videos} partidas={partidas} proxAdv={proxAdv} individual={individual}/>;
       case "modelo-jogo": return <ModeloJogoPage/>;

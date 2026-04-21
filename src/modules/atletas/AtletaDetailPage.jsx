@@ -8,7 +8,7 @@ import {
   ArrowLeft, Play, BarChart3, Film, Activity,
 } from "lucide-react";
 
-export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], individual=[], athleteMode=false}) {
+export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], individual=[], calendario=[], athleteMode=false}) {
   const [tab, setTab] = useState(athleteMode ? "videos" : "dados");
   const a=ATLETAS.find(x=>x.id===id)||ATLETAS[0];
   const aN = norm(a.nome);
@@ -346,7 +346,7 @@ export default function AtletaDetailPage({id, onBack, videos=[], partidas=[], in
       </div>
       <div style={{fontFamily:font,fontSize:10,color:C.textDim,marginBottom:14}}>Clipes individuais, análises e materiais do atleta.</div>
       {aVideos.length > 0
-        ? <VideosPage videos={aVideos} athleteMode athleteInfo={a} partidas={partidas}/>
+        ? <VideosPage videos={aVideos} athleteMode athleteInfo={a} partidas={partidas} calendario={calendario}/>
         : <Card><div style={{fontFamily:font,fontSize:12,color:C.textDim,padding:30,textAlign:"center"}}>Nenhum vídeo individual cadastrado.</div></Card>}
     </div>}
 
