@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { C, fontD, font } from "../../shared/design";
 import { Card, SH, StatCard, Escudo, CompLogo } from "../../shared/atoms";
 import { Trophy, Target, Shield, Activity } from "lucide-react";
-import { SERIE_B_TEAMS, SERIE_B_METRICS, computeSerieBAverages, formatMetric, mergeSerieBRows } from "./data";
+import { SERIE_B_TEAMS, SERIE_B_METRICS, SERIE_B_TABLE_METRICS, computeSerieBAverages, formatMetric, mergeSerieBRows } from "./data";
 import ScatterExplorer from "./ScatterExplorer";
 import AuxiliaryCharts from "./AuxiliaryCharts";
 
@@ -66,7 +66,7 @@ export default function SerieBPage({ liveRows }) {
             <tr style={{borderBottom:`1px solid ${C.border}`}}>
               <Th label="Pos" k="pos" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort}/>
               <Th label="Equipa" k="nome" sortKey={sortKey} sortDir={sortDir} onClick={toggleSort} align="left"/>
-              {SERIE_B_METRICS.map(m => (
+              {SERIE_B_TABLE_METRICS.map(m => (
                 <Th key={m.key} label={m.label} k={m.key} sortKey={sortKey} sortDir={sortDir} onClick={toggleSort}/>
               ))}
             </tr>
@@ -83,7 +83,7 @@ export default function SerieBPage({ liveRows }) {
                     <span style={{fontWeight:600,color:C.text}}>{t.nome}</span>
                   </div>
                 </td>
-                {SERIE_B_METRICS.map(m => (
+                {SERIE_B_TABLE_METRICS.map(m => (
                   <td key={m.key} style={tdStyle({center:true,color: cellColor(t[m.key], avg[m.key], m.key)})}>
                     {formatMetric(t[m.key], m.fmt)}
                   </td>
@@ -93,7 +93,7 @@ export default function SerieBPage({ liveRows }) {
             <tr style={{background:C.goldDim,borderTop:`2px solid ${C.gold}44`}}>
               <td style={tdStyle({center:true,fontWeight:700,color:C.gold})}>—</td>
               <td style={tdStyle({align:"left",fontWeight:700,color:C.gold})}>MÉDIA LIGA</td>
-              {SERIE_B_METRICS.map(m => (
+              {SERIE_B_TABLE_METRICS.map(m => (
                 <td key={m.key} style={tdStyle({center:true,fontWeight:700,color:C.gold})}>
                   {formatMetric(avg[m.key], m.fmt)}
                 </td>

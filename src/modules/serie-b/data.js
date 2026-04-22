@@ -96,6 +96,15 @@ export const SERIE_B_METRICS = [
   { key: "pctAcertosTercoFinal", label: "% Acertos Terço Final", group: "Passe", fmt: "dec2" },
 ];
 
+// Subset "core" usado na tabela de Classificação (evita estourar horizontal).
+// O catálogo completo (SERIE_B_METRICS) continua disponível para scatter/ranking.
+const TABLE_KEYS = new Set([
+  "pontos","xPoints","golos","xG","gs","xGA","posse",
+  "remates","rematesP90","pctAlvo",
+  "pctAcertosPasses","ppda","duelosDefP90","pctExitoDuelosAer",
+]);
+export const SERIE_B_TABLE_METRICS = SERIE_B_METRICS.filter(m => TABLE_KEYS.has(m.key));
+
 // Escudos: transfermarkt wappen CDN. Fallback gracioso via <Escudo onError>.
 const TM = (id) => `https://tmssl.akamaized.net/images/wappen/head/${id}.png`;
 
