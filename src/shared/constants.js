@@ -667,6 +667,7 @@ export const NAV = [
     { id:"partidas",label:"Partidas / Pós-Jogo",icon:Shield },
     { id:"bolas-paradas",label:"Bolas Paradas",icon:Target },
     { id:"treinos",label:"Treinos",icon:Dumbbell },
+    { id:"serie-b",label:"Série B",icon:BarChart3 },
   ]},
   { section: "ELENCO", items: [
     { id:"atletas",label:"Atletas",icon:Users },

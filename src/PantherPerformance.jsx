@@ -24,6 +24,7 @@ import AnalistasPage from "./modules/analistas/AnalistasPage";
 import IndicacoesPage from "./modules/indicacoes/IndicacoesPage";
 import ProtocolosPage from "./modules/protocolos/ProtocolosPage";
 import ControleAcessoPage from "./modules/controle-acesso/ControleAcessoPage";
+import SerieBPage from "./modules/serie-b/SerieBPage";
 import LoginPage from "./modules/auth/LoginPage";
 import WatermarkOverlay from "./shared/WatermarkOverlay";
 import { logAccess, EVENT_TYPES } from "./shared/access";
@@ -106,6 +107,7 @@ export default function PantherPerformance() {
       case "partidas": return <PartidasPage videos={videos} partidas={partidas} calendario={calendario}/>;
       case "bolas-paradas": return <BolasParadasPage videos={videos} partidas={partidas} calendario={calendario} individual={individual} proxAdv={proxAdv}/>;
       case "treinos": return <TreinosPage videos={videos} partidas={partidas} calendario={calendario}/>;
+      case "serie-b": return <SerieBPage/>;
       case "atletas": return <AtletasPage nav={nav} individual={individual}/>;
       case "videos": return <VideosPage videos={videos} partidas={partidas} calendario={calendario}/>;
       case "analistas": return <AnalistasPage tarefas={tarefas} addTarefa={addTarefa} updateTarefa={updateTarefa} removeTarefa={removeTarefa} showAddTarefa={showAddTarefa} setShowAddTarefa={setShowAddTarefa}/>;
