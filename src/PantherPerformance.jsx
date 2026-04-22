@@ -241,7 +241,7 @@ export default function PantherPerformance() {
       </div>
 
       {/* MAIN */}
-      <div style={{marginLeft:210,flex:1,padding:"16px 20px",minHeight:"100vh"}}>
+      <div style={{marginLeft:210,flex:1,minWidth:0,padding:"16px 20px",minHeight:"100vh"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,paddingBottom:12,borderBottom:`1px solid ${C.border}`}}>
           <h1 style={{fontFamily:fontD,fontSize:22,fontWeight:700,color:C.text,textTransform:"uppercase",letterSpacing:"0.06em"}}>{pageTitle}</h1>
           <div style={{fontFamily:font,fontSize:10,color:C.textDim}}></div>
