@@ -4,6 +4,7 @@ import { Card, SH, StatCard, Escudo, CompLogo } from "../../shared/atoms";
 import { Trophy, Target, Shield, Activity } from "lucide-react";
 import { SERIE_B_TEAMS, SERIE_B_METRICS, computeSerieBAverages, formatMetric } from "./data";
 import ScatterExplorer from "./ScatterExplorer";
+import AuxiliaryCharts from "./AuxiliaryCharts";
 
 const SORT_ARROW = (dir) => dir === "asc" ? "▲" : "▼";
 
@@ -45,6 +46,9 @@ export default function SerieBPage() {
     <div style={{marginBottom:16}}>
       <ScatterExplorer teams={teams}/>
     </div>
+
+    {/* AUXILIARY CHARTS — Pts vs xPts + ranking por métrica */}
+    <AuxiliaryCharts teams={teams}/>
 
     {/* CLASSIFICATION TABLE */}
     <Card>
