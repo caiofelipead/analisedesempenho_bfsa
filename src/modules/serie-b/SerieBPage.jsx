@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { C, fontD, font } from "../../shared/design";
 import { Card, SH, StatCard, Escudo, CompLogo } from "../../shared/atoms";
 import { Trophy, Target, Shield, Activity } from "lucide-react";
-import { SERIE_B_TEAMS, SERIE_B_METRICS, SERIE_B_TABLE_METRICS, computeSerieBAverages, formatMetric, mergeSerieBRows } from "./data";
+import { SERIE_B_TEAMS, SERIE_B_METRICS, SERIE_B_TABLE_METRICS, SERIE_B_DEFENSIVE_KEYS, computeSerieBAverages, formatMetric, mergeSerieBRows } from "./data";
 import ScatterExplorer from "./ScatterExplorer";
 import AuxiliaryCharts from "./AuxiliaryCharts";
 
@@ -146,11 +146,10 @@ function tdStyle({align="center",center=false,fontWeight=500,color}={}) {
 }
 
 // Green = better than league avg (offensive↑ / defensive↓); Red = worse.
-const DEFENSIVE_KEYS = new Set(["gs","xGA","xGAremate"]);
 function cellColor(v, avg, key) {
   if (!Number.isFinite(v) || !Number.isFinite(avg)) return undefined;
   const diff = v - avg;
-  const defensive = DEFENSIVE_KEYS.has(key);
+  const defensive = SERIE_B_DEFENSIVE_KEYS.has(key);
   const better = defensive ? diff < 0 : diff > 0;
   if (Math.abs(diff) / (Math.abs(avg) || 1) < 0.05) return undefined;
   return better ? C.green : C.red;
