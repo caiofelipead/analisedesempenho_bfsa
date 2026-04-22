@@ -138,28 +138,25 @@ export function formatMetric(v, fmt) {
   return Number(v).toFixed(2).replace(".", ",");
 }
 
-// Normaliza nome da equipa para match entre planilha e fallback estático
-// (remove acento/sigla/hífen/espaço, tudo minúsculo).
+// Normaliza nome da equipa para match entre planilha e fallback estático.
 function teamKey(s) {
   return String(s||"").toLowerCase().normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]/g, "");
 }
 
-// Recebe rows vindas de mapSerieB (aba "base") e devolve um array pronto
-// para a página: escudos vêm do catálogo estático (planilha não carrega logo);
-// campos ausentes na planilha caem para o valor estático correspondente.
+// Recebe rows vindas de mapSerieB (aba "base"). Escudo vem da própria planilha
+// (coluna "escudo"), seguindo o mesmo padrão dos demais módulos. Campos ausentes
+// na planilha caem para o valor do catálogo estático correspondente.
 export function mergeSerieBRows(liveRows) {
   if (!Array.isArray(liveRows) || liveRows.length === 0) return SERIE_B_TEAMS;
   const byName = new Map(SERIE_B_TEAMS.map(t => [teamKey(t.nome), t]));
   return liveRows.map(row => {
     const staticT = byName.get(teamKey(row.nome)) || {};
     const merged = { ...staticT };
-    // Live row tem prioridade quando o valor não é null/undefined/"".
     for (const [k, v] of Object.entries(row)) {
       if (v !== null && v !== undefined && v !== "") merged[k] = v;
     }
-    if (!merged.escudo && staticT.escudo) merged.escudo = staticT.escudo;
     return merged;
   });
 }
