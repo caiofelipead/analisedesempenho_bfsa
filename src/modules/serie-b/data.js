@@ -105,6 +105,21 @@ const TABLE_KEYS = new Set([
 ]);
 export const SERIE_B_TABLE_METRICS = SERIE_B_METRICS.filter(m => TABLE_KEYS.has(m.key));
 
+// Métricas onde "menor é melhor" (defensivas/negativas).
+// Usado para pintar células e barras: valor abaixo da média vira verde,
+// acima vira vermelho. Para as demais métricas a lógica é invertida.
+export const SERIE_B_DEFENSIVE_KEYS = new Set([
+  // Gols sofridos
+  "gs","xGA","xGAremate","gsCabeca","gsPenalti","gsLivre","gsForaArea",
+  // Pressão sofrida / defesa
+  "cantosSofrP90","remSofr","remSofrP90","pctRemIntercet",
+  // Posse perdida / indisciplina
+  "perdasBola","perdasBolaP90","faltasCom","faltasComP90",
+  "forasJogo","forasJogoP90",
+  // PPDA: quanto menor, mais intensa a pressão → melhor
+  "ppda",
+]);
+
 // Escudos: transfermarkt wappen CDN. Fallback gracioso via <Escudo onError>.
 const TM = (id) => `https://tmssl.akamaized.net/images/wappen/head/${id}.png`;
 

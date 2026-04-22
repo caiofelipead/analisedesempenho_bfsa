@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer,
   Cell, Tooltip, ReferenceLine,
 } from "recharts";
-import { SERIE_B_METRICS, computeSerieBAverages, formatMetric } from "./data";
+import { SERIE_B_METRICS, SERIE_B_DEFENSIVE_KEYS, computeSerieBAverages, formatMetric } from "./data";
 
 // ───────────────────────────────────────────────
 // 1) Points vs xPoints — sort by delta to highlight over/underperformers
@@ -83,8 +83,7 @@ export function MetricRankingChart({ teams }) {
   const avg = useMemo(() => computeSerieBAverages(teams), [teams]);
 
   // Defensive metrics: lower is better, so invert the sort semantic for color.
-  const defensive = new Set(["gs","xGA","xGAremate"]);
-  const isDefensive = defensive.has(metric);
+  const isDefensive = SERIE_B_DEFENSIVE_KEYS.has(metric);
 
   const data = useMemo(() => [...teams]
     .sort((a, b) => isDefensive ? a[metric] - b[metric] : b[metric] - a[metric])
