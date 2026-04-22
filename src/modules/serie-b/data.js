@@ -1,22 +1,99 @@
-// Série B 2026 — dados da aba "Série B 2026" da planilha "Análise Desempenho | BFSA".
-// Estrutura estática para permitir visualização offline; pode ser substituída por
-// sync do Google Sheets no futuro (ver useSheets.js).
+// Série B 2026 — dados da aba "base" da planilha "Análise Desempenho | BFSA"
+// (gid 437531422). O dataset estático abaixo é fallback offline; quando o sync
+// do Google Sheets traz rows, elas são mescladas em SerieBPage (ver useSheets.js
+// + mergeSerieBRows). Os escudos continuam sendo resolvidos localmente por nome.
 
 export const SERIE_B_METRICS = [
-  { key: "pontos",       label: "Pontos",        group: "Geral",         fmt: "int" },
-  { key: "xPoints",      label: "xPoints",       group: "Geral",         fmt: "dec2" },
-  { key: "idadeMedia",   label: "Idade Média",   group: "Geral",         fmt: "dec2" },
-  { key: "posse",        label: "Posse %",       group: "Geral",         fmt: "dec2" },
-  { key: "substituicoes",label: "Substituições", group: "Geral",         fmt: "int" },
-  { key: "gs",           label: "GS",            group: "Geral",         fmt: "int" },
-  { key: "xGA",          label: "xGA",           group: "Geral",         fmt: "dec2" },
-  { key: "xGAremate",    label: "xGA/remate",    group: "Geral",         fmt: "dec2" },
-  { key: "remates",      label: "Remates",       group: "Ataque/Remate", fmt: "int" },
-  { key: "rematesP90",   label: "Remates p90",   group: "Ataque/Remate", fmt: "dec2" },
-  { key: "pctAlvo",      label: "% Alvo",        group: "Ataque/Remate", fmt: "dec2" },
-  { key: "cabeca",       label: "Cabeça",        group: "Ataque/Remate", fmt: "int" },
-  { key: "postes",       label: "Postes",        group: "Ataque/Remate", fmt: "int" },
-  { key: "foraArea",     label: "Fora Área",     group: "Ataque/Remate", fmt: "int" },
+  // ── Geral ────────────────────────────────────────────────
+  { key: "pontos",        label: "Pontos",         group: "Geral", fmt: "int" },
+  { key: "xPoints",       label: "xPoints",        group: "Geral", fmt: "dec2" },
+  { key: "idadeMedia",    label: "Idade Média",    group: "Geral", fmt: "dec2" },
+  { key: "posse",         label: "Posse %",        group: "Geral", fmt: "dec2" },
+  { key: "substituicoes", label: "Substituições",  group: "Geral", fmt: "int" },
+  { key: "golos",         label: "Golos",          group: "Geral", fmt: "int" },
+  { key: "xG",            label: "xG",             group: "Geral", fmt: "dec2" },
+  { key: "xGremate",      label: "xG/remate",      group: "Geral", fmt: "dec2" },
+  { key: "gs",            label: "GS",             group: "Geral", fmt: "int" },
+  { key: "xGA",           label: "xGA",            group: "Geral", fmt: "dec2" },
+  { key: "xGAremate",     label: "xGA/remate",     group: "Geral", fmt: "dec2" },
+
+  // ── Ataque / Remate ───────────────────────────────────────
+  { key: "remates",       label: "Remates",        group: "Ataque/Remate", fmt: "int" },
+  { key: "rematesP90",    label: "Remates p90",    group: "Ataque/Remate", fmt: "dec2" },
+  { key: "pctAlvo",       label: "% Alvo",         group: "Ataque/Remate", fmt: "dec2" },
+  { key: "cabeca",        label: "Cabeça",         group: "Ataque/Remate", fmt: "int" },
+  { key: "postes",        label: "Postes",         group: "Ataque/Remate", fmt: "int" },
+  { key: "foraArea",      label: "Fora Área",      group: "Ataque/Remate", fmt: "int" },
+  { key: "aPartirJogo",   label: "A Partir Jogo",  group: "Ataque/Remate", fmt: "int" },
+  { key: "areaBaliza",    label: "Área Baliza",    group: "Ataque/Remate", fmt: "int" },
+
+  // ── Cruzamentos ──────────────────────────────────────────
+  { key: "cruzamentos",     label: "Cruzamentos",   group: "Cruzamentos", fmt: "int" },
+  { key: "cruzP90",         label: "Cruz p90",      group: "Cruzamentos", fmt: "dec2" },
+  { key: "pctAcertosCruz",  label: "% Acertos",     group: "Cruzamentos", fmt: "dec2" },
+  { key: "flancoDir",       label: "Flanco Dir",    group: "Cruzamentos", fmt: "int" },
+  { key: "flancoEsq",       label: "Flanco Esq",    group: "Cruzamentos", fmt: "int" },
+
+  // ── 1v1 / Dribles ────────────────────────────────────────
+  { key: "um1v1Dribles", label: "1v1 Dribles",     group: "1v1", fmt: "int" },
+  { key: "um1v1P90",     label: "1v1 p90",         group: "1v1", fmt: "dec2" },
+  { key: "pctExito1v1",  label: "% Êxito 1v1",     group: "1v1", fmt: "dec2" },
+
+  // ── Pressão ofensiva / zona adversária ──────────────────
+  { key: "toquesArea",    label: "Toques Área",     group: "Zona Adv.", fmt: "int" },
+  { key: "toquesAreaP90", label: "Toques Área p90", group: "Zona Adv.", fmt: "dec2" },
+  { key: "faltasSofr",    label: "Faltas Sofr",     group: "Zona Adv.", fmt: "int" },
+  { key: "faltasSofrP90", label: "Faltas Sofr p90", group: "Zona Adv.", fmt: "dec2" },
+  { key: "forasJogo",     label: "Foras Jogo",      group: "Zona Adv.", fmt: "int" },
+  { key: "forasJogoP90",  label: "Foras Jogo p90",  group: "Zona Adv.", fmt: "dec2" },
+  { key: "cantosP90",     label: "Cantos p90",      group: "Zona Adv.", fmt: "dec2" },
+
+  // ── Defesa ───────────────────────────────────────────────
+  { key: "cantosSofrP90",      label: "Cantos Sofr p90",      group: "Defesa", fmt: "dec2" },
+  { key: "remSofr",            label: "Rem Sofr",             group: "Defesa", fmt: "int" },
+  { key: "remSofrP90",         label: "Rem Sofr p90",         group: "Defesa", fmt: "dec2" },
+  { key: "remIntercet",        label: "Rem Intercet",         group: "Defesa", fmt: "int" },
+  { key: "remIntercetP90",     label: "Rem Intercet p90",     group: "Defesa", fmt: "dec2" },
+  { key: "pctRemIntercet",     label: "% Rem Intercet",       group: "Defesa", fmt: "dec2" },
+  { key: "pctRemIntercetSofr", label: "% Rem Intercet Sofr",  group: "Defesa", fmt: "dec2" },
+  { key: "duelosDef",          label: "Duelos Def",           group: "Defesa", fmt: "int" },
+  { key: "duelosDefP90",       label: "Duelos Def p90",       group: "Defesa", fmt: "dec2" },
+  { key: "pctExitoDuelosDef",  label: "% Êxito Duelos Def",   group: "Defesa", fmt: "dec2" },
+  { key: "intersecoes",        label: "Interseções",          group: "Defesa", fmt: "int" },
+  { key: "intersecoesP90",     label: "Interseções p90",      group: "Defesa", fmt: "dec2" },
+  { key: "duelosAer",          label: "Duelos Aer",           group: "Defesa", fmt: "int" },
+  { key: "duelosAerP90",       label: "Duelos Aer p90",       group: "Defesa", fmt: "dec2" },
+  { key: "pctExitoDuelosAer",  label: "% Êxito Duelos Aer",   group: "Defesa", fmt: "dec2" },
+
+  // ── Pressão / Intensidade / Faltas ──────────────────────
+  { key: "perdasBola",    label: "Perdas Bola",     group: "Pressão", fmt: "int" },
+  { key: "perdasBolaP90", label: "Perdas Bola p90", group: "Pressão", fmt: "dec2" },
+  { key: "intensDesafio", label: "Intens Desafio",  group: "Pressão", fmt: "dec2" },
+  { key: "ppda",          label: "PPDA",            group: "Pressão", fmt: "dec2" },
+  { key: "faltasCom",     label: "Faltas Com",      group: "Pressão", fmt: "int" },
+  { key: "faltasComP90",  label: "Faltas Com p90",  group: "Pressão", fmt: "dec2" },
+
+  // ── Gols sofridos — detalhe ─────────────────────────────
+  { key: "gsCabeca",   label: "GS Cabeça",   group: "GS detalhe", fmt: "int" },
+  { key: "gsPenalti",  label: "GS Pênalti",  group: "GS detalhe", fmt: "int" },
+  { key: "gsLivre",    label: "GS Livre",    group: "GS detalhe", fmt: "int" },
+  { key: "gsForaArea", label: "GS Fora Área",group: "GS detalhe", fmt: "int" },
+
+  // ── Construção / passe ──────────────────────────────────
+  { key: "passes",               label: "Passes",                group: "Passe", fmt: "int" },
+  { key: "passesP90",            label: "Passes p90",            group: "Passe", fmt: "dec2" },
+  { key: "pctAcertosPasses",     label: "% Acertos Passes",      group: "Passe", fmt: "dec2" },
+  { key: "passeProf",            label: "Passe Prof",            group: "Passe", fmt: "int" },
+  { key: "passeProfP90",         label: "Passe Prof p90",        group: "Passe", fmt: "dec2" },
+  { key: "pctAcertosPasseProf",  label: "% Acertos Passe Prof",  group: "Passe", fmt: "dec2" },
+  { key: "passeDec",             label: "Passe Dec",             group: "Passe", fmt: "int" },
+  { key: "passeDecP90",          label: "Passe Dec p90",         group: "Passe", fmt: "dec2" },
+  { key: "passesLong",           label: "Passes Long",           group: "Passe", fmt: "int" },
+  { key: "passesLongP90",        label: "Passes Long p90",       group: "Passe", fmt: "dec2" },
+  { key: "pctAcertosPassesLong", label: "% Acertos Passes Long", group: "Passe", fmt: "dec2" },
+  { key: "tercoFinal",           label: "Terço Final",           group: "Passe", fmt: "int" },
+  { key: "tercoFinalP90",        label: "Terço Final p90",       group: "Passe", fmt: "dec2" },
+  { key: "pctAcertosTercoFinal", label: "% Acertos Terço Final", group: "Passe", fmt: "dec2" },
 ];
 
 // Escudos: transfermarkt wappen CDN. Fallback gracioso via <Escudo onError>.
@@ -59,4 +136,30 @@ export function formatMetric(v, fmt) {
   if (v === null || v === undefined || Number.isNaN(v)) return "—";
   if (fmt === "int") return Math.round(v).toString();
   return Number(v).toFixed(2).replace(".", ",");
+}
+
+// Normaliza nome da equipa para match entre planilha e fallback estático
+// (remove acento/sigla/hífen/espaço, tudo minúsculo).
+function teamKey(s) {
+  return String(s||"").toLowerCase().normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+// Recebe rows vindas de mapSerieB (aba "base") e devolve um array pronto
+// para a página: escudos vêm do catálogo estático (planilha não carrega logo);
+// campos ausentes na planilha caem para o valor estático correspondente.
+export function mergeSerieBRows(liveRows) {
+  if (!Array.isArray(liveRows) || liveRows.length === 0) return SERIE_B_TEAMS;
+  const byName = new Map(SERIE_B_TEAMS.map(t => [teamKey(t.nome), t]));
+  return liveRows.map(row => {
+    const staticT = byName.get(teamKey(row.nome)) || {};
+    const merged = { ...staticT };
+    // Live row tem prioridade quando o valor não é null/undefined/"".
+    for (const [k, v] of Object.entries(row)) {
+      if (v !== null && v !== undefined && v !== "") merged[k] = v;
+    }
+    if (!merged.escudo && staticT.escudo) merged.escudo = staticT.escudo;
+    return merged;
+  });
 }

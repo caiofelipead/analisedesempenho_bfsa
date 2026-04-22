@@ -71,6 +71,7 @@ export default function PantherPerformance() {
   const calendario = sheets.liveCalendario || [];
   const videos = sheets.liveVideos || [];
   const individual = sheets.liveIndividual || [];
+  const serieBLive = sheets.liveSerieB || null;
 
   const proxAdv = calendario.length > 0 ? (() => {
     const pending = calendario.find(c => !c.adv_ok);
@@ -107,7 +108,7 @@ export default function PantherPerformance() {
       case "partidas": return <PartidasPage videos={videos} partidas={partidas} calendario={calendario}/>;
       case "bolas-paradas": return <BolasParadasPage videos={videos} partidas={partidas} calendario={calendario} individual={individual} proxAdv={proxAdv}/>;
       case "treinos": return <TreinosPage videos={videos} partidas={partidas} calendario={calendario}/>;
-      case "serie-b": return <SerieBPage/>;
+      case "serie-b": return <SerieBPage liveRows={serieBLive}/>;
       case "atletas": return <AtletasPage nav={nav} individual={individual}/>;
       case "videos": return <VideosPage videos={videos} partidas={partidas} calendario={calendario}/>;
       case "analistas": return <AnalistasPage tarefas={tarefas} addTarefa={addTarefa} updateTarefa={updateTarefa} removeTarefa={removeTarefa} showAddTarefa={showAddTarefa} setShowAddTarefa={setShowAddTarefa}/>;

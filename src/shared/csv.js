@@ -2,7 +2,7 @@ import { ptNum, findCol, getAdv, getComp } from "./utils";
 
 export const SHEETS_CSV_BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThRhCTfsLmX3ftpF-0m2UwZeDNBWjn5TxnDCBB3i5W82bh1dNW8m-sbORNTX5FBA/pub?output=csv";
 export const SHEETS_API_URL = process.env.REACT_APP_SHEETS_API_URL || ""; // e.g. "https://api.example.com"
-export const GID = { cadastro:2058075615, coletivo:1880381548, individual:2098013514, videos:789793586, calendario:429987536 };
+export const GID = { cadastro:2058075615, coletivo:1880381548, individual:2098013514, videos:789793586, calendario:429987536, serieB:437531422 };
 
 export function parseCSV(text) {
   const clean = text.replace(/^\uFEFF/, "");
@@ -194,6 +194,96 @@ export function mapIndividual(rows) {
     dribles: ptNum(findCol(r, "Dribbles/com sucesso", "Dribles", "Dribbles", "Dribles com sucesso", "Dribles/com sucesso", "Successful dribbles")),
     duelos: ptNum(findCol(r, "Duelos/ganhos", "Duelos", "Duels", "Duelos ganhos", "Duels won")),
   }));
+}
+
+// ────────────────────────────────────────────────────────────
+// Série B — aba "base" (headers completos conforme planilha)
+// Mantém merge com o dataset estático: quando a célula vem vazia
+// o consumidor faz fallback para o valor pré-existente.
+// ────────────────────────────────────────────────────────────
+export function mapSerieB(rows) {
+  if (rows.length > 0) {
+    console.log("[BFSA mapSerieB] headers:", Object.keys(rows[0]));
+  }
+  return rows
+    .filter(r => (findCol(r, "Equipa", "equipa", "Team", "Equipe") || "").trim() && ptNum(findCol(r, "Pos", "pos", "Position")) != null)
+    .map(r => ({
+      pos:                  ptNum(findCol(r, "Pos")),
+      nome:                 String(findCol(r, "Equipa", "equipa", "Team", "Equipe") || "").trim(),
+      pontos:               ptNum(findCol(r, "Pontos")),
+      xPoints:              ptNum(findCol(r, "xPoints")),
+      idadeMedia:           ptNum(findCol(r, "Idade Média", "Idade Media")),
+      posse:                ptNum(findCol(r, "Posse %", "Posse%", "Posse")),
+      substituicoes:        ptNum(findCol(r, "Substituições", "Substituicoes")),
+      golos:                ptNum(findCol(r, "Golos", "Gols")),
+      xG:                   ptNum(findCol(r, "xG")),
+      xGremate:             ptNum(findCol(r, "xG/remate", "xG por remate")),
+      gs:                   ptNum(findCol(r, "GS")),
+      xGA:                  ptNum(findCol(r, "xGA")),
+      xGAremate:            ptNum(findCol(r, "xGA/remate", "xGA por remate")),
+      remates:              ptNum(findCol(r, "Remates")),
+      rematesP90:           ptNum(findCol(r, "Remates p90")),
+      pctAlvo:              ptNum(findCol(r, "% Alvo", "%Alvo")),
+      cabeca:               ptNum(findCol(r, "Cabeça", "Cabeca")),
+      postes:               ptNum(findCol(r, "Postes")),
+      foraArea:             ptNum(findCol(r, "Fora Área", "Fora Area")),
+      aPartirJogo:          ptNum(findCol(r, "A Partir Jogo", "A partir de jogo")),
+      cruzamentos:          ptNum(findCol(r, "Cruzamentos")),
+      cruzP90:              ptNum(findCol(r, "Cruz p90")),
+      pctAcertosCruz:       ptNum(findCol(r, "% Acertos")),
+      flancoDir:            ptNum(findCol(r, "Flanco Dir")),
+      flancoEsq:            ptNum(findCol(r, "Flanco Esq")),
+      areaBaliza:           ptNum(findCol(r, "Área Baliza", "Area Baliza")),
+      um1v1Dribles:         ptNum(findCol(r, "1v1 Driblbes", "1v1 Dribles", "1v1 Driblles")),
+      um1v1P90:             ptNum(findCol(r, "1v1 p90")),
+      pctExito1v1:          ptNum(findCol(r, "% Êxito 1v1", "% Exito 1v1")),
+      toquesArea:           ptNum(findCol(r, "Toques Área", "Toques Area")),
+      toquesAreaP90:        ptNum(findCol(r, "Toques Área p90", "Toques Area p90")),
+      faltasSofr:           ptNum(findCol(r, "Faltas Sofr")),
+      faltasSofrP90:        ptNum(findCol(r, "Faltas Sofr p90")),
+      forasJogo:            ptNum(findCol(r, "Foras Jogo")),
+      forasJogoP90:         ptNum(findCol(r, "Foras Jogo p90")),
+      cantosP90:            ptNum(findCol(r, "Cantos p90")),
+      cantosSofrP90:        ptNum(findCol(r, "Cantos Sofr p90")),
+      remSofr:              ptNum(findCol(r, "Rem Sofr")),
+      remSofrP90:           ptNum(findCol(r, "Rem Sofr p90")),
+      remIntercet:          ptNum(findCol(r, "Rem Intercet")),
+      remIntercetP90:       ptNum(findCol(r, "Rem Intercet p90")),
+      pctRemIntercet:       ptNum(findCol(r, "% Rem Intercet")),
+      pctRemIntercetSofr:   ptNum(findCol(r, "% Rem Intercet Sofr")),
+      duelosDef:            ptNum(findCol(r, "Duelos Def")),
+      duelosDefP90:         ptNum(findCol(r, "Duelos Def p90")),
+      pctExitoDuelosDef:    ptNum(findCol(r, "% Êxito Duelos Def", "% Exito Duelos Def")),
+      intersecoes:          ptNum(findCol(r, "Interseções", "Intersecoes")),
+      intersecoesP90:       ptNum(findCol(r, "Interseções p90", "Intersecoes p90")),
+      duelosAer:            ptNum(findCol(r, "Duelos Aer")),
+      duelosAerP90:         ptNum(findCol(r, "Duelos Aer p90")),
+      pctExitoDuelosAer:    ptNum(findCol(r, "% Êxito Duelos Aer", "% Exito Duelos Aer")),
+      perdasBola:           ptNum(findCol(r, "Perdas Bola")),
+      perdasBolaP90:        ptNum(findCol(r, "Perdas Bola p90")),
+      intensDesafio:        ptNum(findCol(r, "Intens Desafio")),
+      ppda:                 ptNum(findCol(r, "PPDA")),
+      faltasCom:            ptNum(findCol(r, "Faltas Com")),
+      faltasComP90:         ptNum(findCol(r, "Faltas Com p90")),
+      gsCabeca:             ptNum(findCol(r, "GS Cabeça", "GS Cabeca")),
+      gsPenalti:            ptNum(findCol(r, "GS Pênalti", "GS Penalti")),
+      gsLivre:              ptNum(findCol(r, "GS Livre")),
+      gsForaArea:           ptNum(findCol(r, "GS Fora Área", "GS Fora Area")),
+      passes:               ptNum(findCol(r, "Passes")),
+      passesP90:            ptNum(findCol(r, "Passes p90")),
+      pctAcertosPasses:     ptNum(findCol(r, "% Acertos Passes")),
+      passeProf:            ptNum(findCol(r, "Passe Prof")),
+      passeProfP90:         ptNum(findCol(r, "Passe Prof p90")),
+      pctAcertosPasseProf:  ptNum(findCol(r, "% Acertos Passe Prof")),
+      passeDec:             ptNum(findCol(r, "Passe Dec")),
+      passeDecP90:          ptNum(findCol(r, "Passe Dec p90")),
+      passesLong:           ptNum(findCol(r, "Passes Long", "Passes Longos")),
+      passesLongP90:        ptNum(findCol(r, "Passes Long p90", "Passes Longos p90")),
+      pctAcertosPassesLong: ptNum(findCol(r, "% Acertos Passes Long", "% Acertos Passes Longos")),
+      tercoFinal:           ptNum(findCol(r, "Terço Final", "Terco Final")),
+      tercoFinalP90:        ptNum(findCol(r, "Terço Final p90", "Terco Final p90")),
+      pctAcertosTercoFinal: ptNum(findCol(r, "% Acertos Terço Final", "% Acertos Terco Final")),
+    }));
 }
 
 export function mapCalendario(rows) {
