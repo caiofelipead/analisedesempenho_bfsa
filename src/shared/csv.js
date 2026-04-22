@@ -210,7 +210,7 @@ export function mapSerieB(rows) {
     .map(r => ({
       pos:                  ptNum(findCol(r, "Pos")),
       nome:                 String(findCol(r, "Equipa", "equipa", "Team", "Equipe") || "").trim(),
-      escudo:               String(findCol(r, "escudo", "Escudo") || "").trim(),
+      escudo:               String(findCol(r, "foto", "Foto", "escudo", "Escudo") || "").trim(),
       pontos:               ptNum(findCol(r, "Pontos")),
       xPoints:              ptNum(findCol(r, "xPoints")),
       idadeMedia:           ptNum(findCol(r, "Idade Média", "Idade Media")),
