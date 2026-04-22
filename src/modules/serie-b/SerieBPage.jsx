@@ -2,14 +2,17 @@ import { useState, useMemo } from "react";
 import { C, fontD, font } from "../../shared/design";
 import { Card, SH, StatCard, Escudo, CompLogo } from "../../shared/atoms";
 import { Trophy, Target, Shield, Activity } from "lucide-react";
-import { SERIE_B_TEAMS, SERIE_B_METRICS, computeSerieBAverages, formatMetric } from "./data";
+import { SERIE_B_TEAMS, SERIE_B_METRICS, computeSerieBAverages, formatMetric, mergeSerieBRows } from "./data";
 import ScatterExplorer from "./ScatterExplorer";
 import AuxiliaryCharts from "./AuxiliaryCharts";
 
 const SORT_ARROW = (dir) => dir === "asc" ? "▲" : "▼";
 
-export default function SerieBPage() {
-  const teams = SERIE_B_TEAMS;
+export default function SerieBPage({ liveRows }) {
+  const teams = useMemo(
+    () => (Array.isArray(liveRows) && liveRows.length > 0 ? mergeSerieBRows(liveRows) : SERIE_B_TEAMS),
+    [liveRows]
+  );
   const avg = useMemo(() => computeSerieBAverages(teams), [teams]);
   const [sortKey, setSortKey] = useState("pos");
   const [sortDir, setSortDir] = useState("asc");
