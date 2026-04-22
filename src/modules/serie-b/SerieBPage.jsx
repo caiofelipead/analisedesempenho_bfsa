@@ -3,6 +3,7 @@ import { C, fontD, font } from "../../shared/design";
 import { Card, SH, StatCard, Escudo, CompLogo } from "../../shared/atoms";
 import { Trophy, Target, Shield, Activity } from "lucide-react";
 import { SERIE_B_TEAMS, SERIE_B_METRICS, computeSerieBAverages, formatMetric } from "./data";
+import ScatterExplorer from "./ScatterExplorer";
 
 const SORT_ARROW = (dir) => dir === "asc" ? "▲" : "▼";
 
@@ -38,6 +39,11 @@ export default function SerieBPage() {
       <StatCard label="Melhor Defesa (xGA)" value={formatMetric(bestXg.xGA,"dec2")} sub={bestXg.nome} icon={Shield} accent={C.green}/>
       <StatCard label="Mais Remates" value={bestShots.remates} sub={`${bestShots.nome} · ${formatMetric(bestShots.rematesP90,"dec2")}/p90`} icon={Target} accent={C.blue}/>
       <StatCard label="Posse Média" value={formatMetric(avg.posse,"dec2") + "%"} sub={`Liga · ${teams.length} clubes`} icon={Activity} accent={C.yellow}/>
+    </div>
+
+    {/* SCATTER EXPLORER */}
+    <div style={{marginBottom:16}}>
+      <ScatterExplorer teams={teams}/>
     </div>
 
     {/* CLASSIFICATION TABLE */}
