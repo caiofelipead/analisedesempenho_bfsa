@@ -15,6 +15,25 @@ import { supabase } from "../supabaseClient";
 const LS_KEY = "bfsa_access_logs";
 const LS_CAP = 500; // evita crescer sem limite no fallback local
 
+// Circuit breaker: se a tabela `access_logs` não existir (404) ou estiver
+// inacessível por RLS, desabilitamos chamadas ao Supabase pelo resto da sessão
+// para não inundar o console com erros repetidos. O fallback em localStorage
+// continua funcionando normalmente.
+let supabaseDisabled = false;
+function isMissingTableError(error) {
+  if (!error) return false;
+  const code = error.code || "";
+  const status = error.status || 0;
+  const msg = (error.message || "").toLowerCase();
+  return (
+    status === 404 ||
+    code === "PGRST205" || // PostgREST: schema cache miss / relation not found
+    code === "42P01" ||    // Postgres: undefined_table
+    msg.includes("not find the table") ||
+    msg.includes("does not exist")
+  );
+}
+
 // ─────────────────────────────────────────────
 // EVENT TYPES
 // ─────────────────────────────────────────────
@@ -109,9 +128,13 @@ export async function logAccess({ username, event_type, path = null, detail = nu
     writeLS([{ id: `ls_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`, ...row }, ...cur]);
   } catch {}
 
-  if (supabase) {
+  if (supabase && !supabaseDisabled) {
     try {
-      await supabase.from("access_logs").insert([row]);
+      const { error } = await supabase.from("access_logs").insert([row]);
+      if (error && isMissingTableError(error)) {
+        supabaseDisabled = true;
+        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      }
     } catch {
       // silencioso por design
     }
@@ -122,7 +145,7 @@ export async function logAccess({ username, event_type, path = null, detail = nu
 // READ
 // ─────────────────────────────────────────────
 export async function listAccessLogs({ limit = 100, offset = 0, email = null, event_type = null } = {}) {
-  if (supabase) {
+  if (supabase && !supabaseDisabled) {
     try {
       let q = supabase
         .from("access_logs")
@@ -133,6 +156,10 @@ export async function listAccessLogs({ limit = 100, offset = 0, email = null, ev
       if (event_type) q = q.eq("event_type", event_type);
       const { data, error } = await q;
       if (!error && Array.isArray(data)) return data;
+      if (isMissingTableError(error)) {
+        supabaseDisabled = true;
+        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      }
     } catch {}
   }
   // Fallback local
@@ -147,9 +174,13 @@ export async function listAccessLogs({ limit = 100, offset = 0, email = null, ev
 // ─────────────────────────────────────────────
 export async function purgeAccessLogs(days = 90) {
   const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
-  if (supabase) {
+  if (supabase && !supabaseDisabled) {
     try {
-      await supabase.from("access_logs").delete().lt("created_at", cutoff);
+      const { error } = await supabase.from("access_logs").delete().lt("created_at", cutoff);
+      if (isMissingTableError(error)) {
+        supabaseDisabled = true;
+        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      }
     } catch {}
   }
   try {

@@ -1,5 +1,5 @@
 // Série B 2026 — dados da aba "base" da planilha "Análise Desempenho | BFSA"
-// (gid 437531422). O dataset estático abaixo é fallback offline; quando o sync
+// (gid 891374336). O dataset estático abaixo é fallback offline; quando o sync
 // do Google Sheets traz rows, elas são mescladas em SerieBPage (ver useSheets.js
 // + mergeSerieBRows). Os escudos continuam sendo resolvidos localmente por nome.
 
