@@ -97,8 +97,19 @@ export async function fetchSheet(gid) {
   }
   // Fallback: public CSV URL (requires spreadsheet to be published)
   const url = `${SHEETS_CSV_BASE}&gid=${gid}`;
-  const res = await fetch(url, { redirect: "follow" });
-  if (!res.ok) throw new Error(`Sheet ${gid}: ${res.status}`);
+  let res;
+  try {
+    res = await fetch(url, { redirect: "follow" });
+  } catch (e) {
+    console.warn(`[BFSA] Sheet ${gid} fetch failed (network):`, e.message);
+    return [];
+  }
+  if (!res.ok) {
+    // 404/410 typically mean the gid is no longer published or was removed.
+    // Treat as "no data" so a single dead sheet does not abort the whole sync.
+    console.warn(`[BFSA] Sheet ${gid}: HTTP ${res.status} — skipping (sheet may be unpublished or removed).`);
+    return [];
+  }
   const text = await res.text();
   if (text.trim().startsWith("<!") || text.trim().startsWith("<html")) {
     console.warn(`[BFSA] Sheet ${gid} returned HTML instead of CSV. Check if the spreadsheet is published or configure REACT_APP_SHEETS_API_URL.`);
