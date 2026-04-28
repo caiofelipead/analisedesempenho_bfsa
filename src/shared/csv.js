@@ -2,7 +2,7 @@ import { ptNum, findCol, getAdv, getComp } from "./utils";
 
 export const SHEETS_CSV_BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vThRhCTfsLmX3ftpF-0m2UwZeDNBWjn5TxnDCBB3i5W82bh1dNW8m-sbORNTX5FBA/pub?output=csv";
 export const SHEETS_API_URL = process.env.REACT_APP_SHEETS_API_URL || ""; // e.g. "https://api.example.com"
-export const GID = { cadastro:2058075615, coletivo:1880381548, individual:2098013514, videos:789793586, calendario:429987536, serieB:437531422 };
+export const GID = { cadastro:2058075615, coletivo:1880381548, individual:2098013514, videos:789793586, calendario:429987536, serieB:891374336 };
 
 export function parseCSV(text) {
   const clean = text.replace(/^\uFEFF/, "");
