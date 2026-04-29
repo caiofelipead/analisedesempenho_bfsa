@@ -7,31 +7,41 @@
 //
 // Estratégia:
 //   - Se Supabase estiver configurado, persiste em `access_logs`.
-//   - Caso contrário (ou em caso de falha), cai para localStorage.
-//   - Todos os helpers são silenciosos em erro (a auditoria nunca deve quebrar o app).
+//   - Caso contrário (ou em caso de falha definitiva), cai para localStorage.
+//   - Erros transitórios (rede, RLS) não desabilitam o Supabase — o write é
+//     re-tentado em chamadas futuras. Apenas a ausência da tabela trava o
+//     circuit breaker, evitando flood do console com 404 repetidos.
+//   - TODOS os erros são logados no console com contexto, para que o time
+//     possa diagnosticar problemas de cross-device sync.
 
 import { supabase } from "../supabaseClient";
 
 const LS_KEY = "bfsa_access_logs";
 const LS_CAP = 500; // evita crescer sem limite no fallback local
 
-// Circuit breaker: se a tabela `access_logs` não existir (404) ou estiver
-// inacessível por RLS, desabilitamos chamadas ao Supabase pelo resto da sessão
-// para não inundar o console com erros repetidos. O fallback em localStorage
-// continua funcionando normalmente.
+// Circuit breaker: só dispara quando temos certeza de que a tabela
+// `access_logs` não existe. Erros transitórios (rede, RLS, conflito de
+// schema cache momentâneo) NÃO devem desabilitar o Supabase pelo resto
+// da sessão — caso contrário, perdemos persistência cross-device.
 let supabaseDisabled = false;
-function isMissingTableError(error) {
+function isDefinitelyMissingTable(error) {
   if (!error) return false;
   const code = error.code || "";
   const status = error.status || 0;
-  const msg = (error.message || "").toLowerCase();
-  return (
-    status === 404 ||
-    code === "PGRST205" || // PostgREST: schema cache miss / relation not found
-    code === "42P01" ||    // Postgres: undefined_table
-    msg.includes("not find the table") ||
-    msg.includes("does not exist")
-  );
+  // Sinais inequívocos de tabela ausente:
+  //   - PostgREST: PGRST205 (relação não encontrada)
+  //   - Postgres:  42P01   (undefined_table)
+  //   - HTTP 404 explícito da PostgREST
+  return status === 404 || code === "PGRST205" || code === "42P01";
+}
+
+function describeError(error, action) {
+  if (!error) return null;
+  const parts = [];
+  if (error.code) parts.push(`code=${error.code}`);
+  if (error.status) parts.push(`status=${error.status}`);
+  if (error.message) parts.push(error.message);
+  return `[BFSA access_logs] ${action} falhou: ${parts.join(" | ") || "erro desconhecido"}`;
 }
 
 // ─────────────────────────────────────────────
@@ -131,12 +141,20 @@ export async function logAccess({ username, event_type, path = null, detail = nu
   if (supabase && !supabaseDisabled) {
     try {
       const { error } = await supabase.from("access_logs").insert([row]);
-      if (error && isMissingTableError(error)) {
-        supabaseDisabled = true;
-        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      if (error) {
+        if (isDefinitelyMissingTable(error)) {
+          supabaseDisabled = true;
+          console.warn("[BFSA access_logs] tabela ausente no Supabase — usando fallback local pelo resto da sessão. Rode supabase_setup.sql para habilitar a auditoria cross-device.");
+        } else {
+          // Erro transitório: NÃO desabilita o Supabase, apenas reporta para
+          // o console. A próxima chamada tentará de novo. Sem isso, falhas
+          // silenciosas escondem problemas reais de cross-device sync.
+          console.warn(describeError(error, "insert"));
+        }
       }
-    } catch {
-      // silencioso por design
+    } catch (e) {
+      // Erro de rede / fetch — também não desabilita, só reporta.
+      console.warn(describeError(e, "insert (exception)"));
     }
   }
 }
@@ -156,11 +174,17 @@ export async function listAccessLogs({ limit = 100, offset = 0, email = null, ev
       if (event_type) q = q.eq("event_type", event_type);
       const { data, error } = await q;
       if (!error && Array.isArray(data)) return data;
-      if (isMissingTableError(error)) {
-        supabaseDisabled = true;
-        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      if (error) {
+        if (isDefinitelyMissingTable(error)) {
+          supabaseDisabled = true;
+          console.warn("[BFSA access_logs] tabela ausente no Supabase — usando fallback local pelo resto da sessão.");
+        } else {
+          console.warn(describeError(error, "select"));
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.warn(describeError(e, "select (exception)"));
+    }
   }
   // Fallback local
   let arr = readLS();
@@ -177,11 +201,17 @@ export async function purgeAccessLogs(days = 90) {
   if (supabase && !supabaseDisabled) {
     try {
       const { error } = await supabase.from("access_logs").delete().lt("created_at", cutoff);
-      if (isMissingTableError(error)) {
-        supabaseDisabled = true;
-        console.warn("[BFSA access_logs] tabela indisponível no Supabase — usando fallback local pelo resto da sessão.");
+      if (error) {
+        if (isDefinitelyMissingTable(error)) {
+          supabaseDisabled = true;
+          console.warn("[BFSA access_logs] tabela ausente no Supabase — usando fallback local pelo resto da sessão.");
+        } else {
+          console.warn(describeError(error, "delete"));
+        }
       }
-    } catch {}
+    } catch (e) {
+      console.warn(describeError(e, "delete (exception)"));
+    }
   }
   try {
     const cur = readLS().filter((r) => r.created_at >= cutoff);
