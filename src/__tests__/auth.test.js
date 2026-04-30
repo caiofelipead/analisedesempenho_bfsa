@@ -1,8 +1,10 @@
 import {
-  ROLES, AUTH_USERS, USER_DIRECTORY, SEED_USERS,
+  ROLES, AUTH_USERS, USER_DIRECTORY, SEED_USERS, ATHLETE_DEFAULT_PASSWORD,
   getUserRole, getDisplayName, hasPermission, isAdmin, isViewer,
-  listDirectoryUsers, isValidUsernameInput,
+  listDirectoryUsers, listAthleteLogins, listAthletesWithoutLogin,
+  isValidUsernameInput,
 } from "../shared/auth";
+import { ATLETAS, normalizeLogin } from "../shared/constants";
 
 describe("auth seed directory", () => {
   it("seeds caiofelipe as admin", () => {
@@ -62,6 +64,38 @@ describe("auth helpers", () => {
     for (const u of users) {
       expect([ROLES.ADMIN, ROLES.VIEWER, ROLES.ANALYST]).toContain(u.role);
     }
+  });
+});
+
+describe("athlete logins", () => {
+  it("creates a login for every athlete in ATLETAS", () => {
+    const missing = listAthletesWithoutLogin();
+    expect(missing).toEqual([]);
+  });
+
+  it("returns one login record per athlete with default password", () => {
+    const logins = listAthleteLogins();
+    expect(logins).toHaveLength(ATLETAS.length);
+    for (const a of ATLETAS) {
+      const expected = normalizeLogin(a.nome);
+      const rec = logins.find((l) => l.username === expected);
+      expect(rec).toBeDefined();
+      expect(rec.password).toBe(ATHLETE_DEFAULT_PASSWORD);
+      expect(rec.role).toBe("athlete");
+    }
+  });
+
+  it("materializes athlete credentials in AUTH_USERS", () => {
+    for (const a of ATLETAS) {
+      const key = normalizeLogin(a.nome);
+      expect(AUTH_USERS[key]).toBe(ATHLETE_DEFAULT_PASSWORD);
+    }
+  });
+
+  it("preserves directory passwords on collision (directory wins)", () => {
+    // Sanity: nenhum atleta deve sobrescrever o admin/viewers do diretório.
+    expect(AUTH_USERS.caiofelipe).toBe("analisebfsa");
+    expect(AUTH_USERS.adalbertobaptista).toBe("analisebfsa");
   });
 });
 

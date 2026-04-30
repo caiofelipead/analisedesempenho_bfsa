@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ShieldAlert, ShieldCheck, Lock, Eye, CheckCircle, XCircle,
-  RefreshCw, Filter, UserCircle, Clock, Monitor,
+  RefreshCw, Filter, UserCircle, Clock, Monitor, KeyRound,
 } from "lucide-react";
 import { C, font, fontD } from "../../shared/design";
 import { Card, SH, Badge } from "../../shared/atoms";
 import {
   ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, PERMISSIONS, PERMISSION_ACTIONS,
-  listDirectoryUsers, isAdmin, getUserRole,
+  ATHLETE_DEFAULT_PASSWORD,
+  listDirectoryUsers, listAthleteLogins, listAthletesWithoutLogin,
+  isAdmin, getUserRole,
 } from "../../shared/auth";
 import {
   EVENT_LABELS, EVENT_COLORS, EVENT_TYPES, listAccessLogs, parseUserAgent,
@@ -127,6 +129,113 @@ function UsersTable() {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function AthleteLoginsTable() {
+  const [search, setSearch] = useState("");
+  const athletes = useMemo(() => {
+    const all = listAthleteLogins().sort((a, b) => a.displayName.localeCompare(b.displayName, "pt-BR"));
+    const q = search.trim().toLowerCase();
+    if (!q) return all;
+    return all.filter((a) =>
+      a.displayName.toLowerCase().includes(q) ||
+      a.username.toLowerCase().includes(q) ||
+      (a.posicao || "").toLowerCase().includes(q)
+    );
+  }, [search]);
+
+  const missing = useMemo(() => listAthletesWithoutLogin(), []);
+
+  const inputStyle = {
+    padding: "6px 8px", background: C.bgInput, border: `1px solid ${C.border}`,
+    borderRadius: 4, color: C.text, fontFamily: font, fontSize: 11, outline: "none",
+  };
+
+  return (
+    <Card style={{ marginBottom: 16 }}>
+      <SH title="Logins do Elenco" count={athletes.length} />
+      <div style={{ fontFamily: font, fontSize: 11, color: C.textMid, lineHeight: 1.6, marginBottom: 12 }}>
+        Todo atleta cadastrado em <strong style={{ color: C.text }}>ATLETAS</strong> recebe automaticamente um login
+        usando seu próprio nome (sem espaços, acentos ou maiúsculas) e a senha padrão{" "}
+        <code style={{ background: C.bgInput, padding: "2px 6px", borderRadius: 4, color: C.gold }}>
+          {ATHLETE_DEFAULT_PASSWORD}
+        </code>
+        . A geração é idempotente — novos atletas no roster ganham login na próxima carga do app.
+      </div>
+
+      {missing.length > 0 && (
+        <div style={{
+          padding: "10px 12px", marginBottom: 12, borderRadius: 6,
+          background: `${C.red}15`, border: `1px solid ${C.red}33`,
+          fontFamily: font, fontSize: 11, color: C.red,
+        }}>
+          ⚠ {missing.length} atleta(s) sem login materializado: {missing.map((m) => m.displayName).join(", ")}
+        </div>
+      )}
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+        <Filter size={14} color={C.textDim} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por nome, login ou posição"
+          style={{ ...inputStyle, minWidth: 220 }}
+        />
+      </div>
+
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: font, fontSize: 11 }}>
+          <thead>
+            <tr style={{ textAlign: "left", color: C.textDim, textTransform: "uppercase", letterSpacing: "0.08em", fontSize: 10 }}>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>#</th>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>Nome</th>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>Posição</th>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>
+                <UserCircle size={11} style={{ verticalAlign: "middle", marginRight: 4 }} />Login
+              </th>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>
+                <KeyRound size={11} style={{ verticalAlign: "middle", marginRight: 4 }} />Senha padrão
+              </th>
+              <th style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {athletes.length === 0 && (
+              <tr>
+                <td colSpan={6} style={{ padding: 18, textAlign: "center", color: C.textDim, fontStyle: "italic" }}>
+                  Nenhum atleta encontrado.
+                </td>
+              </tr>
+            )}
+            {athletes.map((a) => (
+              <tr key={a.username}>
+                <td style={{ padding: "8px 10px", color: C.textDim, borderBottom: `1px solid ${C.border}`, fontFamily: "ui-monospace,monospace" }}>
+                  {a.numero || "—"}
+                </td>
+                <td style={{ padding: "8px 10px", color: C.text, borderBottom: `1px solid ${C.border}` }}>
+                  {a.displayName}
+                </td>
+                <td style={{ padding: "8px 10px", color: C.textMid, borderBottom: `1px solid ${C.border}` }}>
+                  {a.posicao || "—"}
+                </td>
+                <td style={{ padding: "8px 10px", color: C.text, borderBottom: `1px solid ${C.border}`, fontFamily: "ui-monospace,monospace" }}>
+                  {a.username}
+                </td>
+                <td style={{ padding: "8px 10px", color: C.gold, borderBottom: `1px solid ${C.border}`, fontFamily: "ui-monospace,monospace" }}>
+                  {a.password}
+                </td>
+                <td style={{ padding: "8px 10px", borderBottom: `1px solid ${C.border}` }}>
+                  <Badge color={a.status === "ativo" ? C.green : C.textDim}>
+                    {a.status === "ativo" ? "Ativo" : a.status}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
 }
 
@@ -311,6 +420,9 @@ export default function ControleAcessoPage({ authedUser }) {
           <UsersTable />
         </Card>
       )}
+
+      {/* Logins do elenco (admin) */}
+      {admin && <AthleteLoginsTable />}
 
       {/* Auditoria (admin) */}
       {admin ? (

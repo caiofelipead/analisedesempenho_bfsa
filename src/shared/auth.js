@@ -173,13 +173,20 @@ export const USER_DIRECTORY = (() => {
   return dir;
 })();
 
+// Senha padrão dos atletas. Exposta para a UI de Controle de Acesso poder
+// orientar a comissão técnica sobre como entregar o acesso ao jogador.
+export const ATHLETE_DEFAULT_PASSWORD =
+  pick("REACT_APP_ATHLETE_DEFAULT_PASSWORD") || "atleta";
+
 // Tabela de login compatível com o formato antigo: { username: password }
-// Inclui atletas (senha padrão "atleta") para não quebrar o Portal do Atleta.
+// Inclui atletas (senha padrão ATHLETE_DEFAULT_PASSWORD) para não quebrar o
+// Portal do Atleta. Atletas entram primeiro para que, em caso de colisão de
+// nome com um usuário do diretório (admin/viewer/analyst), o registro do
+// diretório prevaleça e mantenha as permissões corretas.
 export const AUTH_USERS = (() => {
   const t = {};
+  for (const k of Object.keys(ATHLETE_LOGINS)) t[k] = ATHLETE_DEFAULT_PASSWORD;
   for (const u of Object.values(USER_DIRECTORY)) t[u.username] = u.password;
-  // Atletas — mantém o fluxo existente
-  for (const k of Object.keys(ATHLETE_LOGINS)) t[k] = "atleta";
   return t;
 })();
 
@@ -230,6 +237,34 @@ export function listDirectoryUsers() {
     displayName: u.displayName,
     role: u.role,
   }));
+}
+
+// Lista de logins de atletas — gera um login (username + senha padrão) para
+// CADA atleta cadastrado em ATLETAS. Usada na aba Controle de Acesso para
+// auditar quem do elenco já tem login. A geração é idempotente: rodar várias
+// vezes não cria duplicatas, e atletas adicionados ao roster aparecem
+// automaticamente na próxima leitura.
+export function listAthleteLogins() {
+  return ATLETAS.map((a) => ({
+    id: a.id,
+    username: normalizeLogin(a.nome),
+    displayName: a.nome,
+    posicao: a.pos,
+    numero: a.num,
+    status: a.status,
+    role: ATHLETE_ROLE,
+    password: ATHLETE_DEFAULT_PASSWORD,
+  }));
+}
+
+// Diagnóstico: retorna atletas cujo login NÃO foi materializado em AUTH_USERS.
+// Em condições normais a lista é vazia (a geração é automática), mas o
+// helper protege contra regressões silenciosas no fluxo de seed.
+export function listAthletesWithoutLogin() {
+  return ATLETAS.filter((a) => {
+    const key = normalizeLogin(a.nome);
+    return !AUTH_USERS[key];
+  }).map((a) => ({ id: a.id, displayName: a.nome, expectedUsername: normalizeLogin(a.nome) }));
 }
 
 // Validação permissiva de username: aceita letras/números simples ou e-mail.
